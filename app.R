@@ -9,6 +9,7 @@ library(ggplot2)
 library(fontawesome)
 library(DT)
 
+# ITCR Course data
 itcr_course_data <- read_tsv(file.path("data", "itcr_course_metrics.tsv")) %>% 
   mutate(target_audience = replace_na(target_audience, "Everyone"))
 
@@ -28,6 +29,18 @@ itcr_course_data_long <- itcr_course_data %>%
     modality == "totalUsers" ~ "Website Learners", 
     TRUE ~ modality
   ))
+
+# Google Analytics metrics
+ga_metrics <- readRDS(file.path("data","itcr_ga_metric_data.RDS"))
+
+user_totals <- ga_metrics %>% 
+  janitor::clean_names() %>% 
+  select(website, active_users, average_session_duration)
+
+user_engagement <- ga_metrics %>% 
+  janitor::clean_names() %>% 
+  select(website, screen_page_views_per_user, 
+         sessions, screen_page_views, engagement_rate)
 
 # Everyone, Leadership, new to data science, software developers
 cbPalette <- c("#E69F02", "#56B4E9", "#009E73", "#008080") 
@@ -94,11 +107,19 @@ ui <- page_navbar(
                   plotOutput("leanpub_learner")
                 )
               ),
-              card(
-                card_header("Tables of User Engagement")
-                
+              navset_card_underline(
+                height = 900,
+                full_screen = TRUE,
+                title = "Tables of User Data",
+                nav_panel(
+                  "User Totals",
+                  DTOutput("user_totals")
+                ),
+                nav_panel(
+                  "User Engagement",
+                  DTOutput("user_engagement")
+                )
               )
-              
             )
             
   ),
@@ -115,8 +136,6 @@ ui <- page_navbar(
 )
 
 server <- function(input, output) {
-  
-  
   # Unique Visitors to Websites
   output$unique_visitor_website <- renderPlot({
     ggplot(itcr_course_data, aes(x = reorder(website, -totalUsers), 
@@ -230,6 +249,33 @@ server <- function(input, output) {
       geom_text(aes(label = leanpub_count), size = 3, vjust = - 1, na.rm = TRUE) +
       ylim(c(0, 40)) + 
       scale_fill_manual(values=cbPalette)
+  })
+  
+  # User Totals
+  output$user_totals <- renderDT({
+    datatable(
+      user_totals, 
+      colnames = c("Website", "Active Users", "Avg Session Duration"),
+      options = list(lengthChange = FALSE, # remove "Show X entries"
+                     searching = FALSE), # remove Search box
+      # For the table to grow/shrink
+      fillContainer = TRUE,
+      escape = FALSE
+    )
+  })
+  
+  # User Engagement
+  output$user_engagement <- renderDT({
+    datatable(
+      user_engagement, 
+      colnames = c("Website", "Screen Page Views per User", "Sessions",
+                   "Screen Page Views", "Engagement Rate"),
+      options = list(lengthChange = FALSE, # remove "Show X entries"
+                     searching = FALSE), # remove Search box
+      # For the table to grow/shrink
+      fillContainer = TRUE,
+      escape = FALSE
+    )
   })
   
   
