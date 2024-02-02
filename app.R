@@ -10,6 +10,8 @@ library(ggplot2)
 library(fontawesome)
 library(DT)
 
+# Datasets ----
+
 # ITCR Course data
 itcr_course_data <- read_tsv(file.path("data", "itcr_course_metrics.tsv")) %>% 
   mutate(target_audience = replace_na(target_audience, "Everyone"))
@@ -49,8 +51,17 @@ user_engagement <- ga_metrics %>%
 # Everyone, Leadership, new to data science, software developers
 cbPalette <- c("#E69F02", "#56B4E9", "#009E73", "#008080") 
 
-# TODO: Dynamic Rendering
-# https://rstudio.github.io/bslib/articles/value-boxes/index.html#dynamic-rendering-shiny
+
+# OPEN Meeting Attendance
+open_meeting_attendance <- read_csv("data/open_meeting_attendance.csv")
+
+# CRAN Download Stats
+cran_download_stats <- read_csv("data/cran_download_stats.csv")
+
+xlabel_view <- c(rep(c("black", "transparent", "transparent", "transparent"), 41), "black", "transparent") #166 rows
+#cc <- rev(c("#fde725", "#addc30", "#5ec962", "#28ae80", "#21918c", "#2c728e", "#3b528b", "#472d7b", "#440154"))
+viridis_cc <- c("#440154", "#2c728e", "#28ae80", "#addc30")
+
 
 link_itn <- tags$a(
   shiny::icon("house"), "ITN",
@@ -132,8 +143,27 @@ ui <- page_navbar(
             
   ),
   nav_panel("Workshops"),
-  nav_panel("Software Usage"),
-  nav_panel("Collaborations"),
+  nav_panel("Software Usage",
+            navset_card_underline(
+              height = 900,
+              full_screen = TRUE,
+              title = NULL,
+              nav_panel(
+                "CRAN Monthly Downloads",
+                plotOutput("cran_download_stats")
+              )
+            )),
+  nav_panel("Collaborations",
+            navset_card_underline(
+              height = 900,
+              full_screen = TRUE,
+              title = NULL,
+              nav_panel(
+                "OPEN Meeting Attendance",
+                plotOutput("open_meeting_attendance")
+              )
+            )
+  ),
   nav_menu(
     title = "Links",
     align = "right",
@@ -291,6 +321,39 @@ server <- function(input, output) {
            title = "Course Popularity over Time") +
       scale_color_manual(values=cbPalette) + 
       ggrepel::geom_text_repel(aes(x = duration, y = webAndEnrollmentTotals, label = website), size = 4, vjust = - 1, na.rm = TRUE)
+  })
+  
+  # CRAN Download Stats
+  output$cran_download_stats <- renderPlot({
+    cran_download_stats %>% 
+      ggplot(aes(Month, monthly_downloads, group=package, color = package)) + 
+      geom_line() + 
+      geom_point() +
+      scale_colour_manual(values=viridis_cc) +
+      theme(panel.background = element_blank(), panel.grid = element_blank()) +
+      geom_vline(aes(xintercept = "2019-05"), linetype='dashed', color = '#addc30') + #text2speech published date
+      geom_vline(aes(xintercept="2022-02"), linetype='dashed', color = '#28ae80') + #ottrpal published date 
+      geom_vline(aes(xintercept="2023-07"), linetype='dashed', color = '#2c728e') + #conrad published date
+      theme(axis.text.x = element_text(angle = 90)) +
+      theme(axis.text.x=element_text(color= xlabel_view),
+            legend.position = c(0.05, 0.9)) + #clean up x-axis labels
+      labs(x = NULL,
+           y = "Monthly Downloads",
+           color = "R Packages")
+  })
+  
+  
+  # OPEN Meeting Attendance
+  output$open_meeting_attendance <- renderPlot({
+    open_meeting_attendance %>% 
+      ggplot(aes(x = date, y = attendance)) + 
+      geom_bar(stat = "identity", fill = "lightgreen") +
+      geom_text(aes(label = attendance), size = 3, vjust = - 1) +
+      theme_classic() +
+      theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+      labs(x = NULL, 
+           y = "Attendance",
+           title = "OPEN Meeting Attendance by Month")
   })
   
   
