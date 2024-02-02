@@ -1,6 +1,7 @@
 library(dplyr)
 library(tidyr)
 library(readr)
+library(lubridate)
 library(shiny)
 library(bslib)
 library(bsicons)
@@ -12,6 +13,9 @@ library(DT)
 # ITCR Course data
 itcr_course_data <- read_tsv(file.path("data", "itcr_course_metrics.tsv")) %>% 
   mutate(target_audience = replace_na(target_audience, "Everyone"))
+
+itcr_course_data$webAndEnrollmentTotals <- itcr_course_data %>%
+  select(website_count, coursera_count, leanpub_count) %>% rowSums(na.rm = TRUE)
 
 itcr_course_data_long <- itcr_course_data %>% 
   select(c("website", 
@@ -105,6 +109,10 @@ ui <- page_navbar(
                 nav_panel(
                   "Leanpub Learners",
                   plotOutput("leanpub_learner")
+                ),
+                nav_panel(
+                  "Learners by Launch Date",
+                  plotOutput("learner_by_launch_date")
                 )
               ),
               navset_card_underline(
@@ -136,6 +144,8 @@ ui <- page_navbar(
 )
 
 server <- function(input, output) {
+  # Plots --------
+  
   # Unique Visitors to Websites
   output$unique_visitor_website <- renderPlot({
     ggplot(itcr_course_data, aes(x = reorder(website, -totalUsers), 
@@ -250,6 +260,23 @@ server <- function(input, output) {
       ylim(c(0, 40)) + 
       scale_fill_manual(values=cbPalette)
   })
+  
+  output$learner_by_launch_date <- renderPlot({
+    itcr_course_data %>% 
+      filter(!(website %in% c("ITN Website", "OTTR website", "metricminer.org"))) %>%
+      mutate(duration = today() - website_launch) %>%
+      ggplot(aes(x = duration, y = webAndEnrollmentTotals, color = target_audience)) + 
+      geom_point() + 
+      theme(panel.grid = element_line("black", linewidth = 0.25), panel.background = element_blank(), panel.border = element_rect("black", fill=NA, linewidth=0.5)) +
+      labs(x = "How long the course has been out",
+           y = "Bookdown Views + Coursera & Leanpub Enrollments",
+           color = "Target Audience") +
+      scale_color_manual(values=cbPalette) + 
+      ggrepel::geom_text_repel(aes(x = duration, y = webAndEnrollmentTotals, label = website), size = 4, vjust = - 1, na.rm = TRUE)
+  })
+  
+  
+  # Tables --------
   
   # User Totals
   output$user_totals <- renderDT({
