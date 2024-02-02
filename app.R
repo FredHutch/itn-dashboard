@@ -68,7 +68,7 @@ link_help <- tags$a(
   target = "_blank"
 )
 
-
+# UI ----
 ui <- page_navbar(
   # Favicon
   header = tags$head(tags$link(rel="shortcut icon", href="i/img/favicon.ico")),
@@ -143,6 +143,8 @@ ui <- page_navbar(
   )
 )
 
+
+# Server ----
 server <- function(input, output) {
   # Plots --------
   
@@ -154,10 +156,12 @@ server <- function(input, output) {
       geom_bar(stat = "identity") +
       geom_text(aes(label = totalUsers), size = 3, vjust = - 1) +
       theme_classic() +
-      theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+      theme(axis.text.x = element_text(angle = 45, hjust=1),
+            legend.position = c(0.85, 0.85)) +
       labs(x = NULL,
            y = "Total # of Visitors",
-           fill = "Target Audience") +
+           fill = "Target Audience",
+           title = "Visitor Distribution across Educational Resources") +
       ylim(c(0, 6000)) + 
       scale_fill_manual(values=cbPalette)
   })
@@ -177,7 +181,8 @@ server <- function(input, output) {
       theme_minimal() +
       labs(x = NULL,
            y = NULL,
-           fill = "Target Audience") +
+           fill = "Target Audience",
+           title = "Website Engagement for each Course") +
       facet_wrap(~metric_name, scales = "free_y",
                  labeller = labeller(metric_name = c(screen_page_views_per_user = "Screen Page Views per User",
                                                      average_session_duration = "Average Session Duration",
@@ -201,10 +206,12 @@ server <- function(input, output) {
       ggplot(aes(x = reorder(modality, -total_learners), y = total_learners, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
       theme_classic() +
-      theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+      theme(axis.text.x = element_text(angle = 45, hjust=1),
+            legend.position = c(0.9, 0.85)) +
       labs(x = NULL,
            y = "Visitors/Enrollees",
-           fill = "Target Audience") +
+           fill = "Target Audience",
+           title = "Course Engagement by Modality") +
       geom_text(aes(label = total_learners), size = 3, vjust = - 1, na.rm = TRUE) + 
       ylim(c(0, 4200)) + 
       facet_wrap(~target_audience) + 
@@ -222,10 +229,12 @@ server <- function(input, output) {
       geom_bar(stat = "identity") + 
       labs(x = NULL, 
            y = "Total Learners by Course",
-           fill = "Target Audience") +
+           fill = "Target Audience",
+           title = "Total Number of Learners for each Course") +
       theme_minimal() +
       theme(axis.text.x=element_text(angle=60, hjust=1), 
-            strip.text.x = element_text(size = 8)) + 
+            strip.text.x = element_text(size = 8),
+            legend.position = c(0.9, 0.85)) + 
       geom_text(aes(label = total_learners), size = 3, vjust = - 1, na.rm = TRUE) +
       ylim(c(0, 1800)) + 
       scale_fill_manual(values=cbPalette)
@@ -241,10 +250,12 @@ server <- function(input, output) {
       theme(axis.text.x = element_text(angle = 45, hjust=1)) +
       labs(x = NULL,
            y = "Coursera enrollments",
-           fill = "Target Audience") +
+           fill = "Target Audience",
+           title = "Number of Coursera Enrollments by Course") +
       geom_text(aes(label = coursera_count), size = 3, vjust = - 1, na.rm = TRUE) +
       ylim(c(0, 1200)) + 
-      scale_fill_manual(values=cbPalette)
+      scale_fill_manual(values=cbPalette) +
+      theme(legend.position = c(0.9, 0.85))
   })
   
   # Leanpub Learners
@@ -255,22 +266,29 @@ server <- function(input, output) {
       theme(axis.text.x = element_text(angle = 45, hjust=1)) +
       labs(x = NULL,
            y = "Leanpub enrollments",
-           fill = "Target Audience") +
+           fill = "Target Audience",
+           title = "Number of Leanpub Enrollments by Course") +
       geom_text(aes(label = leanpub_count), size = 3, vjust = - 1, na.rm = TRUE) +
       ylim(c(0, 40)) + 
-      scale_fill_manual(values=cbPalette)
+      scale_fill_manual(values=cbPalette) +
+      theme(legend.position = c(0.9, 0.85))
   })
   
+  # Learners by Launch Date
   output$learner_by_launch_date <- renderPlot({
     itcr_course_data %>% 
       filter(!(website %in% c("ITN Website", "OTTR website", "metricminer.org"))) %>%
       mutate(duration = today() - website_launch) %>%
       ggplot(aes(x = duration, y = webAndEnrollmentTotals, color = target_audience)) + 
       geom_point() + 
-      theme(panel.grid = element_line("black", linewidth = 0.25), panel.background = element_blank(), panel.border = element_rect("black", fill=NA, linewidth=0.5)) +
+      theme(panel.grid = element_line("black", linewidth = 0.25), 
+            panel.background = element_blank(), 
+            panel.border = element_rect("black", fill=NA, linewidth=0.5),
+            legend.position = c(0.918, 0.25)) +
       labs(x = "How long the course has been out",
            y = "Bookdown Views + Coursera & Leanpub Enrollments",
-           color = "Target Audience") +
+           color = "Target Audience",
+           title = "Course Popularity over Time") +
       scale_color_manual(values=cbPalette) + 
       ggrepel::geom_text_repel(aes(x = duration, y = webAndEnrollmentTotals, label = website), size = 4, vjust = - 1, na.rm = TRUE)
   })
