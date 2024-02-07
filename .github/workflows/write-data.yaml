@@ -1,5 +1,5 @@
 
-name: Writing GitHub Metrics Files and Googlesheet
+name: Refresh Data
 on:
   pull_request:
   workflow_dispatch:
@@ -7,17 +7,33 @@ on:
     - cron: '0 0 * * 0'
 
 jobs:
-  write-data:
-    name: Write Data
+  refresh-data:
+    name: Refresh Data
     runs-on: ubuntu-latest
     container:
       image: cansav09/metricminer
 
     steps:
-      - name: Authorize metricminer
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          token: secrets.GH_PAT
+
+      - name: Run metricminer get data script
         env:
           METRICMINER_CALENDLY: ${{ secrets.METRICMINER_CALENDLY }}
           METRICMINER_GITHUB_PAT: ${{ secrets.METRICMINER_GITHUB_PAT }}
           METRICMINER_GOOGLE_ACCESS: ${{ secrets.METRICMINER_GOOGLE_ACCESS }}
           METRICMINER_GOOGLE_REFRESH: ${{ secrets.METRICMINER_GOOGLE_REFRESH }}
         run: Rscript -e ".github/worfklows/get_itn_data.R"
+
+      - name: Commit data files
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          git remote set-url origin https://${GH_PAT}@github.com/${GITHUB_REPOSITORY}
+          git fetch origin
+          git add --force data/*
+          git commit -m 'Refresh data' || echo "No changes to commit"
+          git pull --allow-unrelated-histories --strategy-option=ours
+          git push -u origin main  || echo "No changes to push"
