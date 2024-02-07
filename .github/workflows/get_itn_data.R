@@ -10,10 +10,6 @@ dir.create(file.path(root_dir, "plots"), showWarnings = FALSE)
 
 set.seed(1234)
 
-if (!("remotes" %in% installed.packages())) {
-  install.packages("remotes")
-}
-remotes::install_github("fhdsl/metricminer")
 library(metricminer)
 library("magrittr")
 
