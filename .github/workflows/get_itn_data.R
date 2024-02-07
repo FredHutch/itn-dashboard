@@ -67,20 +67,8 @@ itcr_course_data <- ga_metrics %>%
     website == "Advanced Reproducibility in Cancer Informatics" ~ "Advanced Reproducibility",
                                            TRUE ~ website))
 
-web_traffic_overtime <- ga_dims %>%
-  dplyr::mutate(date = lubridate::ymd(paste0(year, "-", month, "-", day))) %>%
-  dplyr::mutate(month_year = lubridate::ym(paste0(year, "-", month))) %>%
-  dplyr::mutate(web_yn = dplyr::case_when(
-    website == "ITN Website" ~ "ITN Website",
-    website != "ITN Website" ~ "ITN Online Course Website")) %>%
-  dplyr::left_join(manual_course_info) %>%
-      dplyr::mutate(website = dplyr::case_when(
-    website == "Advanced Reproducibility in Cancer Informatics" ~ "Advanced Reproducibility",
-                                           TRUE ~ website))
-
 # Save these to TSVs
 readr::write_tsv(itcr_course_data, file.path(root_dir,"data", "itcr_course_metrics.tsv"))
-readr::write_tsv(web_traffic_overtime, file.path(root_dir,"data", "web_traffic_overtime.tsv"))
 
 collabs <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit#gid=0")
 
