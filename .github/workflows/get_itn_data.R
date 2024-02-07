@@ -22,8 +22,16 @@ auth_from_secret("github", token = Sys.getenv("METRICMINER_GITHUB_PAT"))
 
 ga_accounts <- get_ga_user()
 
-fhdsl_stats_list <- get_all_ga_metrics(account_id = ga_accounts$id[1])
-itcr_stats_list <- get_all_ga_metrics(account_id = ga_accounts$id[2])
+fhdsl_account_id <- ga_accounts %>% 
+  dplyr::filter(name == "fhDaSL") %>% 
+  dplyr::pull(id)
+
+itcr_account_id <- ga_accounts %>% 
+  dplyr::filter(name == "itcrtraining") %>% 
+  dplyr::pull(id)
+
+fhdsl_stats_list <- get_all_ga_metrics(account_id = fhdsl_account_id)
+itcr_stats_list <- get_all_ga_metrics(account_id = itcr_account_id)
 
 # There's some google analytics that aren't ITCR courses
 not_itcr <- c("hutchdatasci", "whoiswho", "MMDS", "FH Cluster 101", "AnVIL_Researcher_Journey")
