@@ -1,6 +1,7 @@
 # C. Savonen
 
-# Download that data
+# Download that ITN data so that it can be used by the dashboard.
+
 # Find .git root directory
 root_dir <- rprojroot::find_root(rprojroot::has_dir(".git"))
 
