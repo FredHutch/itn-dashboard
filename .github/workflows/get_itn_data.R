@@ -13,8 +13,6 @@ set.seed(1234)
 library(metricminer)
 library("magrittr")
 
-auth_from_secret("calendly", token = Sys.getenv("METRICMINER_CALENDLY"))
-
 auth_from_secret("google",
                  refresh_token = Sys.getenv("METRICMINER_GOOGLE_REFRESH"),
                  access_token = Sys.getenv("METRICMINER_GOOGLE_ACCESS"),
@@ -23,7 +21,6 @@ auth_from_secret("google",
 auth_from_secret("github", token = Sys.getenv("METRICMINER_GITHUB_PAT"))
 
 ga_accounts <- get_ga_user()
-calendly_account <- get_calendly_user()
 
 fhdsl_stats_list <- get_all_ga_metrics(account_id = ga_accounts$id[1])
 itcr_stats_list <- get_all_ga_metrics(account_id = ga_accounts$id[2])
