@@ -192,7 +192,8 @@ server <- function(input, output) {
       labs(x = NULL,
            y = "Total # of Visitors",
            fill = "Target Audience",
-           title = "Visitor Distribution across Educational Resources") +
+           title = "Visitor Distribution across Educational Resources",
+           subtitle = "'Everyone' is the primary target audience for the most visited resource, the ITN Website.") +
       ylim(c(0, 6000)) + 
       scale_fill_manual(values=cbPalette)
   })
