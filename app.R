@@ -41,12 +41,15 @@ ga_metrics <- readRDS(file.path("data","itcr_ga_metric_data.RDS"))
 
 user_totals <- ga_metrics %>% 
   janitor::clean_names() %>% 
-  select(website, active_users, average_session_duration)
+  select(website, active_users, average_session_duration) %>% 
+  mutate(average_session_duration = round(average_session_duration, digits = 0))
 
 user_engagement <- ga_metrics %>% 
   janitor::clean_names() %>% 
   select(website, screen_page_views_per_user, 
-         sessions, screen_page_views, engagement_rate)
+         sessions, screen_page_views, engagement_rate) %>% 
+  mutate(screen_page_views_per_user = round(screen_page_views_per_user, 0),
+         engagement_rate = round(engagement_rate, 2))
 
 # Everyone, Leadership, new to data science, software developers
 cbPalette <- c("#E69F02", "#56B4E9", "#009E73", "#008080") 
