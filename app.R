@@ -184,10 +184,11 @@ server <- function(input, output) {
                                  y = totalUsers, 
                                  fill = target_audience)) +
       geom_bar(stat = "identity") +
-      geom_text(aes(label = totalUsers), size = 3, vjust = - 1) +
+      geom_text(aes(label = totalUsers), size = 4, vjust = - 1) +
       theme_classic() +
       theme(axis.text.x = element_text(angle = 45, hjust=1),
-            legend.position = c(0.85, 0.85)) +
+            legend.position = c(0.85, 0.85),
+            text = element_text(size = 17, family = "Arial")) +
       labs(x = NULL,
            y = "Total # of Visitors",
            fill = "Target Audience",
@@ -222,9 +223,9 @@ server <- function(input, output) {
       scale_x_discrete(limits = c("Leadership in Cancer Informatics", "NIH Data Sharing", "Ethical Data Handling", "Overleaf and Latex for Scientific Articles", "AI for Decision Makers",
                                   "Reproducibility in Cancer Informatics", "Choosing Genomics Tools", "Computing for Cancer Informatics",
                                   "Documentation and Usability", "Advanced Reproducibility", "AI for Efficient Programming", "GitHub Automation for Scientists")) +
-      theme(axis.text.x=element_text(angle=60, hjust=1), 
-            strip.text.x = element_text(size = 8), 
-            plot.margin = unit(c(1.5,.5,.5,1.5), "cm"))
+      theme(axis.text.x=element_text(angle=90, hjust=1), 
+            plot.margin = unit(c(1.5,.5,.5,1.5), "cm"),
+            text = element_text(size = 17, family = "Arial"))
     
   })
   
@@ -237,12 +238,13 @@ server <- function(input, output) {
       geom_bar(stat = "identity", na.rm = TRUE) +
       theme_classic() +
       theme(axis.text.x = element_text(angle = 45, hjust=1),
-            legend.position = c(0.9, 0.85)) +
+            legend.position = c(0.9, 0.85),
+            text = element_text(size = 17, family = "Arial")) +
       labs(x = NULL,
            y = "Visitors/Enrollees",
            fill = "Target Audience",
            title = "Course Engagement by Modality") +
-      geom_text(aes(label = total_learners), size = 3, vjust = - 1, na.rm = TRUE) + 
+      geom_text(aes(label = total_learners), size = 4, vjust = - 1, na.rm = TRUE) + 
       ylim(c(0, 4200)) + 
       facet_wrap(~target_audience) + 
       scale_fill_manual(values=cbPalette)
@@ -262,10 +264,10 @@ server <- function(input, output) {
            fill = "Target Audience",
            title = "Total Number of Learners for each Course") +
       theme_minimal() +
-      theme(axis.text.x=element_text(angle=60, hjust=1), 
-            strip.text.x = element_text(size = 8),
-            legend.position = c(0.9, 0.85)) + 
-      geom_text(aes(label = total_learners), size = 3, vjust = - 1, na.rm = TRUE) +
+      theme(axis.text.x=element_text(angle = 70, hjust=1), 
+            legend.position = c(0.9, 0.85),
+            text = element_text(size = 17, family = "Arial")) + 
+      geom_text(aes(label = total_learners), size = 4, vjust = - 1, na.rm = TRUE) +
       ylim(c(0, 1800)) + 
       scale_fill_manual(values=cbPalette)
   })
@@ -277,15 +279,16 @@ server <- function(input, output) {
     ggplot(itcr_course_data %>% filter(coursera_count > 0), aes(x = reorder(website, -coursera_count), y = coursera_count, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
       theme_classic() +
-      theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+      theme(axis.text.x = element_text(angle = 60, hjust=1)) +
       labs(x = NULL,
            y = "Coursera enrollments",
            fill = "Target Audience",
            title = "Number of Coursera Enrollments by Course") +
-      geom_text(aes(label = coursera_count), size = 3, vjust = - 1, na.rm = TRUE) +
+      geom_text(aes(label = coursera_count), size = 4, vjust = - 1, na.rm = TRUE) +
       ylim(c(0, 1200)) + 
       scale_fill_manual(values=cbPalette) +
-      theme(legend.position = c(0.9, 0.85))
+      theme(legend.position = c(0.9, 0.85),
+            text = element_text(size = 17, family = "Arial"))
   })
   
   # Leanpub Learners
@@ -293,15 +296,16 @@ server <- function(input, output) {
     ggplot(itcr_course_data %>% filter(leanpub_count > 0) , aes(x = reorder(website, -leanpub_count), y = leanpub_count, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
       theme_classic() +
-      theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+      theme(axis.text.x = element_text(angle = 60, hjust=1)) +
       labs(x = NULL,
            y = "Leanpub enrollments",
            fill = "Target Audience",
            title = "Number of Leanpub Enrollments by Course") +
-      geom_text(aes(label = leanpub_count), size = 3, vjust = - 1, na.rm = TRUE) +
+      geom_text(aes(label = leanpub_count), size = 4, vjust = - 1, na.rm = TRUE) +
       ylim(c(0, 40)) + 
       scale_fill_manual(values=cbPalette) +
-      theme(legend.position = c(0.9, 0.85))
+      theme(legend.position = c(0.9, 0.85),
+            text = element_text(size = 17, family = "Arial"))
   })
   
   # Learners by Launch Date
@@ -314,13 +318,14 @@ server <- function(input, output) {
       theme(panel.grid = element_line("black", linewidth = 0.25), 
             panel.background = element_blank(), 
             panel.border = element_rect("black", fill=NA, linewidth=0.5),
-            legend.position = c(0.918, 0.25)) +
+            legend.position = c(0.918, 0.25),
+            text = element_text(size = 17, family = "Arial")) +
       labs(x = "How long the course has been out",
            y = "Bookdown Views + Coursera & Leanpub Enrollments",
            color = "Target Audience",
            title = "Course Popularity over Time") +
       scale_color_manual(values=cbPalette) + 
-      ggrepel::geom_text_repel(aes(x = duration, y = webAndEnrollmentTotals, label = website), size = 4, vjust = - 1, na.rm = TRUE)
+      ggrepel::geom_text_repel(aes(x = duration, y = webAndEnrollmentTotals, label = website), size = 6, vjust = - 1, na.rm = TRUE)
   })
   
   # CRAN Download Stats
@@ -330,7 +335,9 @@ server <- function(input, output) {
       geom_line() + 
       geom_point() +
       scale_colour_manual(values=viridis_cc) +
-      theme(panel.background = element_blank(), panel.grid = element_blank()) +
+      theme(panel.background = element_blank(), 
+            panel.grid = element_blank(),
+            text = element_text(size = 17, family = "Arial")) +
       geom_vline(aes(xintercept = "2019-05"), linetype='dashed', color = '#addc30') + #text2speech published date
       geom_vline(aes(xintercept="2022-02"), linetype='dashed', color = '#28ae80') + #ottrpal published date 
       geom_vline(aes(xintercept="2023-07"), linetype='dashed', color = '#2c728e') + #conrad published date
@@ -348,9 +355,10 @@ server <- function(input, output) {
     open_meeting_attendance %>% 
       ggplot(aes(x = date, y = attendance)) + 
       geom_bar(stat = "identity", fill = "lightgreen") +
-      geom_text(aes(label = attendance), size = 3, vjust = - 1) +
+      geom_text(aes(label = attendance), size = 4, vjust = - 1) +
       theme_classic() +
-      theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+      theme(axis.text.x = element_text(angle = 45, hjust=1),
+            text = element_text(size = 17, family = "Arial")) +
       labs(x = NULL, 
            y = "Attendance",
            title = "OPEN Meeting Attendance by Month")
