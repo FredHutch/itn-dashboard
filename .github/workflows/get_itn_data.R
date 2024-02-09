@@ -22,12 +22,12 @@ auth_from_secret("github", token = Sys.getenv("METRICMINER_GITHUB_PAT"))
 
 ga_accounts <- get_ga_user()
 
-fhdsl_account_id <- ga_accounts %>% 
-  dplyr::filter(name == "fhDaSL") %>% 
+fhdsl_account_id <- ga_accounts %>%
+  dplyr::filter(name == "fhDaSL") %>%
   dplyr::pull(id)
 
-itcr_account_id <- ga_accounts %>% 
-  dplyr::filter(name == "itcrtraining") %>% 
+itcr_account_id <- ga_accounts %>%
+  dplyr::filter(name == "itcrtraining") %>%
   dplyr::pull(id)
 
 fhdsl_stats_list <- get_all_ga_metrics(account_id = fhdsl_account_id)
@@ -79,10 +79,6 @@ loqui_usage <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d
 
 # Save this to a TSV
 readr::write_tsv(loqui_usage, file.path(root_dir,"data", "loqui_usage.tsv"))
-
-itcr_drive_id <- "https://drive.google.com/drive/folders/0AJb5Zemj0AAkUk9PVA"
-itcr_slido_data <- get_slido_files(itcr_drive_id)
-saveRDS(itcr_slido_data, file.path(root_dir, "data", "itcr_slido_data.RDS"))
 
 career_stage_counts <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit#gid=8290691", range = "Workshop attendee type")
 readr::write_tsv(career_stage_counts, file.path(root_dir, "data", "career_stage_counts.tsv"))
