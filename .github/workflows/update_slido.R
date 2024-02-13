@@ -1,6 +1,7 @@
 # C. Savonen
 
 # Update workshop info from Slido
+# Only needs to be rerun when another workshop with Slido responses is done
 
 # Find .git root directory
 root_dir <- rprojroot::find_root(rprojroot::has_dir(".git"))
