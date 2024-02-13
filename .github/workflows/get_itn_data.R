@@ -114,7 +114,7 @@ repos <- c(
   #"FredHutch/loqui"
 )
 
-gh_metrics <- get_repos_metrics(repo_names = repos)
+gh_metrics <- get_multiple_repos_metrics(repo_names = repos)
 
 saveRDS(gh_metrics, file.path(root_dir,"data", "itcr_gh_metrics.RDS"))
 
