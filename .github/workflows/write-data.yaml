@@ -31,6 +31,9 @@ jobs:
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          git config --global user.email "cansav09@gmail.com"
+          git config --global user.name "cansavvy"
           git remote set-url origin https://${GH_PAT}@github.com/${GITHUB_REPOSITORY}
           git fetch origin
           git add --force data/*
