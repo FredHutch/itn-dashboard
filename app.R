@@ -4,6 +4,8 @@ library(readr)
 library(lubridate)
 library(janitor)
 library(shiny)
+library(udpipe)
+library(wordcloud)
 library(bslib)
 library(bsicons)
 library(htmltools)
@@ -85,6 +87,16 @@ poll_data_subset <- poll_data %>%
 
 poll_data_subset$how_likely_are_you_to_use_what_you_learned_in_your_daily_work <- factor(poll_data_subset$how_likely_are_you_to_use_what_you_learned_in_your_daily_work, 
                                                                                          levels = c("Not very likely",  "Somewhat likely", "Likely", "Very likely", "Extremely likely"))
+
+# Wordcloud 
+ud_model <- udpipe::udpipe_load_model("wordcloud-model.udpipe")
+
+results <- udpipe::udpipe_annotate(ud_model, x = poll_data$what_did_you_like_most_about_the_workshop) %>%
+  as.data.frame() %>%
+  dplyr::filter(upos %in% c("NOUN", "ADJ", "ADV")) %>%
+  mutate(lemma= tolower(lemma)) %>%
+  count(lemma)
+
 
 
 link_itn <- tags$a(
@@ -182,6 +194,15 @@ ui <- page_navbar(
                 nav_panel(
                   "Workshop Relevance Feedback",
                   plotOutput("workshop_relevance_feedback")
+                )
+              ),
+              navset_card_underline(
+                height = 900,
+                full_screen = TRUE,
+                title = NULL,
+                nav_panel(
+                  "What did You Like Most about Workshop?",
+                  plotOutput("like_most_about_workshop")
                 )
               )
             )
@@ -427,6 +448,14 @@ server <- function(input, output) {
       labs(title = "How likely are you to use what you learned in your daily work?",
            x = NULL)
     
+  })
+  
+  # What did you like most about workshop
+  output$like_most_about_workshop <- renderPlot({
+    wordcloud::wordcloud(words = results$lemma, 
+                         freq = results$n,
+                         colors = c("#98fb98", "#83D475", "#355E3B"),
+                         min.freq = 3, scale = c(3, .4))
   })
   
   # Tables --------
