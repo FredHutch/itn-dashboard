@@ -2,6 +2,7 @@ library(dplyr)
 library(tidyr)
 library(readr)
 library(lubridate)
+library(janitor)
 library(shiny)
 library(bslib)
 library(bsicons)
@@ -64,6 +65,26 @@ cran_download_stats <- read_csv("data/cran_download_stats.csv")
 xlabel_view <- c(rep(c("black", "transparent", "transparent", "transparent"), 41), "black", "transparent") #166 rows
 #cc <- rev(c("#fde725", "#addc30", "#5ec962", "#28ae80", "#21918c", "#2c728e", "#3b528b", "#472d7b", "#440154"))
 viridis_cc <- c("#440154", "#2c728e", "#28ae80", "#addc30")
+
+# ITCR Slido Data
+itcr_slido_data <- readRDS(file.path("data", "itcr_slido_data.RDS"))
+
+# Workshops Data
+poll_data <- itcr_slido_data$`Polls-per-user` %>%
+  janitor::clean_names()
+poll_data <- poll_data %>% 
+  mutate(merged_likely_rec = if_else(is.na(how_likely_would_you_be_to_recommend_this_workshop), how_likely_would_you_be_to_recommend_this_workshop_2, 
+                                     how_likely_would_you_be_to_recommend_this_workshop))
+
+poll_data_subset <- poll_data %>%
+  dplyr::filter(how_likely_are_you_to_use_what_you_learned_in_your_daily_work %in% c("Extremely likely", 
+                                                                                     "Likely",
+                                                                                     "Not very likely", 
+                                                                                     "Somewhat likely", 
+                                                                                     "Very likely"))
+
+poll_data_subset$how_likely_are_you_to_use_what_you_learned_in_your_daily_work <- factor(poll_data_subset$how_likely_are_you_to_use_what_you_learned_in_your_daily_work, 
+                                                                                         levels = c("Not very likely",  "Somewhat likely", "Likely", "Very likely", "Extremely likely"))
 
 
 link_itn <- tags$a(
@@ -145,7 +166,26 @@ ui <- page_navbar(
             )
             
   ),
-  nav_panel("Workshops"),
+  nav_panel("Workshops",
+            layout_column_wrap(
+              fill = TRUE,
+              width = NULL,
+              style = css(grid_template_columns = "1.2fr 1fr"),
+              navset_card_underline(
+                height = 900,
+                full_screen = TRUE,
+                title = NULL,
+                nav_panel(
+                  "Recommend this Workshop?",
+                  plotOutput("recommend_workshop")
+                ),
+                nav_panel(
+                  "Workshop Relevance Feedback",
+                  plotOutput("workshop_relevance_feedback")
+                )
+              )
+            )
+  ),
   nav_panel("Software Usage",
             navset_card_underline(
               height = 900,
@@ -368,6 +408,26 @@ server <- function(input, output) {
            title = "OPEN Meeting Attendance by Month")
   })
   
+  # How Likely woud you be to recommend this workshop?
+  output$recommend_workshop <- renderPlot({
+    as.numeric(poll_data$merged_likely_rec) %>%
+      qplot(geom = "bar") +
+      geom_bar(fill = "#CBC3E3") +
+      theme_classic() +
+      labs(title = "How likely would you be to recommend this workshop?", 
+           y = "count", x = "rating")
+  })
+  
+  # Workshop Relevance Feedback
+  output$workshop_relevance_feedback <- renderPlot({
+    ggplot(poll_data_subset, aes(x = how_likely_are_you_to_use_what_you_learned_in_your_daily_work)) +
+      geom_bar(stat = "count", fill = "#CBC3E3") +
+      theme_classic() +
+      theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+      labs(title = "How likely are you to use what you learned in your daily work?",
+           x = NULL)
+    
+  })
   
   # Tables --------
   
