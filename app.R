@@ -97,6 +97,24 @@ results <- udpipe::udpipe_annotate(ud_model, x = poll_data$what_did_you_like_mos
   mutate(lemma= tolower(lemma)) %>%
   count(lemma)
 
+rec_results <- udpipe::udpipe_annotate(ud_model, x = poll_data$please_share_any_recommendations_you_have_for_improvements) %>%
+  as.data.frame() %>%
+  filter(upos %in% c("NOUN", "ADJ", "ADV")) %>%
+  mutate(lemma= tolower(lemma)) %>%
+  count(lemma)
+
+# Collaborations
+collabs <- readr::read_tsv(file.path("data", "collabs.tsv")) %>% 
+  separate_rows("Category", sep = ", ", ) %>% 
+  mutate(Category = trimws(Category)) %>% 
+  filter(Category != "?")
+
+# Career Stage of Workshop Registrants
+career_stage_counts <- readr::read_tsv(file.path("data", "career_stage_counts.tsv"))
+career_stage_counts_subset <- career_stage_counts[c(1:5), c(1:11)]
+career_stage_counts_final <- data.frame(Stage = colnames(career_stage_counts_subset[2:10]),
+                                        count = unlist(career_stage_counts_subset[5, c(2:10)]), 
+                                        "Trainee" = c("yes","yes","no","no","no","yes","no","yes","yes"))
 
 
 link_itn <- tags$a(
@@ -194,6 +212,10 @@ ui <- page_navbar(
                 nav_panel(
                   "Workshop Relevance Feedback",
                   plotOutput("workshop_relevance_feedback")
+                ),
+                nav_panel(
+                  "Career Stage of Workshop Registrants",
+                  plotOutput("workshop_career_stage")
                 )
               ),
               navset_card_underline(
@@ -203,11 +225,34 @@ ui <- page_navbar(
                 nav_panel(
                   "What did You Like Most about Workshop?",
                   plotOutput("like_most_about_workshop")
+                ),
+                nav_panel(
+                  "Recommendations for Improvements",
+                  plotOutput("recommendation_improvement")
                 )
               )
             )
   ),
   nav_panel("Software Usage",
+            layout_column_wrap(
+              width = "250px",
+              fill = TRUE,
+              value_box(
+                title = "Loqui: A Shiny app for Creating Automated Videos",
+                value = NULL,
+                a("https://loqui.fredhutch.org/", href = "https://loqui.fredhutch.org/", target = "_blank")
+              ),
+              value_box(
+                title = "Unique Number of Loqui Users",
+                value = "18",
+                showcase = bsicons::bs_icon("people-fill")
+              ),
+              value_box(
+                title = "Number of Videos made with Loqui",
+                value = "486",
+                showcase = bsicons::bs_icon("camera-video-fill")
+              )
+            ),
             navset_card_underline(
               height = 900,
               full_screen = TRUE,
@@ -222,6 +267,14 @@ ui <- page_navbar(
               height = 900,
               full_screen = TRUE,
               title = NULL,
+              nav_panel(
+                "All Collaborations",
+                plotOutput("collaboration_all")
+              ),
+              nav_panel(
+                "ITCR Collaborations",
+                plotOutput("collaboration_itcr")
+              ),
               nav_panel(
                 "OPEN Meeting Attendance",
                 plotOutput("open_meeting_attendance")
@@ -406,8 +459,7 @@ server <- function(input, output) {
       geom_vline(aes(xintercept = "2019-05"), linetype='dashed', color = '#addc30') + #text2speech published date
       geom_vline(aes(xintercept="2022-02"), linetype='dashed', color = '#28ae80') + #ottrpal published date 
       geom_vline(aes(xintercept="2023-07"), linetype='dashed', color = '#2c728e') + #conrad published date
-      theme(axis.text.x = element_text(angle = 90)) +
-      theme(axis.text.x=element_text(color= xlabel_view),
+      theme(axis.text.x = element_text(angle = 90),
             legend.position = c(0.05, 0.9)) + #clean up x-axis labels
       labs(x = NULL,
            y = "Monthly Downloads",
@@ -435,6 +487,7 @@ server <- function(input, output) {
       qplot(geom = "bar") +
       geom_bar(fill = "#CBC3E3") +
       theme_classic() +
+      theme(text = element_text(size = 17, family = "Arial")) +
       labs(title = "How likely would you be to recommend this workshop?", 
            y = "count", x = "rating")
   })
@@ -444,11 +497,28 @@ server <- function(input, output) {
     ggplot(poll_data_subset, aes(x = how_likely_are_you_to_use_what_you_learned_in_your_daily_work)) +
       geom_bar(stat = "count", fill = "#CBC3E3") +
       theme_classic() +
-      theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+      theme(axis.text.x = element_text(angle = 45, hjust=1),
+            text = element_text(size = 17, family = "Arial")) +
       labs(title = "How likely are you to use what you learned in your daily work?",
            x = NULL)
     
   })
+  
+  output$workshop_career_stage <- renderPlot({
+    ggplot(career_stage_counts_final, aes(x=reorder(Stage, -count), y=count, fill=Trainee)) +
+      geom_bar(stat = "identity") +
+      xlab("Career stage") +
+      ylab("Number of registrees") +
+      ggtitle("Career Stage of Workshop Registrants") +
+      theme_bw() + 
+      theme(panel.background = element_blank(),
+            panel.grid = element_blank(), 
+            axis.text.x = element_text(angle = 45, hjust=1),
+            text = element_text(size = 17, family = "Arial")) +
+      scale_fill_manual(values = c("#440154", "#28ae80"))
+  })
+  
+  
   
   # What did you like most about workshop
   output$like_most_about_workshop <- renderPlot({
@@ -456,6 +526,52 @@ server <- function(input, output) {
                          freq = results$n,
                          colors = c("#98fb98", "#83D475", "#355E3B"),
                          min.freq = 3, scale = c(3, .4))
+  })
+  
+  
+  # Recommendations for Improvements
+  output$recommendation_improvement <- renderPlot({
+    wordcloud::wordcloud(words = rec_results$lemma, 
+                         freq=rec_results$n,
+                         colors = c("#98fb98", "#83D475", "#355E3B"),
+                         min.freq = 3, scale = c(4, .4))
+  })
+  
+  
+  # Collaborations - ITCR Funded
+  output$collaboration_itcr <- renderPlot({
+    collabs %>% 
+      filter(ITN_ITCR_or_external == "ITCR") %>%
+      count(Category) %>%
+      ggplot(aes(y =n, x=reorder(Category, -n), fill = Category )) +
+      geom_bar(position="dodge", stat = "identity") +
+      theme_minimal() +
+      theme(axis.text.x=element_text(angle=60, hjust=1), strip.text.x = element_text(size=6),
+            text = element_text(size = 17, family = "Arial"),
+            legend.position = "none",
+            plot.margin = unit(c(.75,.5,.5,.5), "cm")) +
+      xlab(NULL) +
+      ylab("N") +
+      ggtitle("Collaborations with ITCR funded individuals only")
+    
+  })
+  
+  # Collaborations - All
+  output$collaboration_all <- renderPlot({
+    collabs %>% 
+      count(Category) %>% 
+      ggplot(aes(y = n, x = reorder(Category,-n), fill = Category)) +
+      geom_bar(position = "dodge", stat = "identity") +
+      theme_minimal() +
+      theme(axis.text.x=element_text(angle=60, hjust=1), 
+            strip.text.x = element_text(size = 6),
+            legend.position="none", 
+            text = element_text(size = 17, family = "Arial"),
+            plot.margin = unit(c(.75,.5,.5,.5), "cm")) + 
+      xlab(NULL) +
+      ylab("N") +
+      ggtitle("Collaborations with All Individuals")
+    
   })
   
   # Tables --------
