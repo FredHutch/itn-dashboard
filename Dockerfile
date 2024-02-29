@@ -15,5 +15,8 @@ WORKDIR /srv/shiny-server/
 
 EXPOSE 3838
 
+ENV APPLICATION_LOGS_TO_STDOUT=true
+ENV SHINY_LOG_STDERR=1
+
 CMD ["/usr/bin/shiny-server"]
 
