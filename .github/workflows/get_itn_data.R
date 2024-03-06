@@ -42,7 +42,6 @@ not_itcr <- c("hutchdatasci", "whoiswho", "MMDS", "FH Cluster 101", "AnVIL_Resea
 ga_metrics <- dplyr::bind_rows(fhdsl_stats_list$metrics ,itcr_stats_list$metrics) %>%
   dplyr::filter(
     !(website %in%not_itcr)
-  )
 
 # Save RDS
 saveRDS(ga_metrics, file.path(root_dir, "data","itcr_ga_metric_data.RDS"))
@@ -50,7 +49,6 @@ saveRDS(ga_metrics, file.path(root_dir, "data","itcr_ga_metric_data.RDS"))
 ga_dims <- dplyr::bind_rows(fhdsl_stats_list$dimensions, itcr_stats_list$dimensions) %>%
   dplyr::filter(
     !(website %in% not_itcr)
-  )
 
 # Save RDS
 saveRDS(ga_dims, file.path(root_dir, "data","itcr_ga_dims_data.RDS"))
@@ -58,8 +56,8 @@ saveRDS(ga_dims, file.path(root_dir, "data","itcr_ga_dims_data.RDS"))
 ga_link_clicks <- dplyr::bind_rows(fhdsl_stats_list$link_clicks,itcr_stats_list$link_clicks) %>%
   dplyr::filter(
     !(website %in% not_itcr)
-  )
 
+ 
 # Save RDS
 saveRDS(ga_link_clicks, file.path(root_dir, "data","itcr_ga_link_click_data.RDS"))
 
@@ -218,6 +216,5 @@ open_meeting_attendance <- data.frame(names = open_meeting_attendance)
 
 # Save this to a TSV
 readr::write_tsv(open_meeting_attendance, file.path(root_dir, "data", "open_meeting_attendance.tsv"))
-
 
 sessionInfo()
