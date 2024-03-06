@@ -40,26 +40,22 @@ not_itcr <- c("hutchdatasci", "whoiswho", "MMDS", "FH Cluster 101", "AnVIL_Resea
 
 # Set up each data frame
 ga_metrics <- dplyr::bind_rows(fhdsl_stats_list$metrics ,itcr_stats_list$metrics) %>%
-  dplyr::filter(
-    !(website %in%not_itcr)
+  dplyr::filter(!(website %in%not_itcr))
 
-# Save RDS
-saveRDS(ga_metrics, file.path(root_dir, "data","itcr_ga_metric_data.RDS"))
+# Save as CSV
+readr::write_csv(ga_metrics, file.path(root_dir,"data", "itcr_ga_metric_data.csv"))
 
 ga_dims <- dplyr::bind_rows(fhdsl_stats_list$dimensions, itcr_stats_list$dimensions) %>%
-  dplyr::filter(
-    !(website %in% not_itcr)
+  dplyr::filter(!(website %in%not_itcr))
 
-# Save RDS
-saveRDS(ga_dims, file.path(root_dir, "data","itcr_ga_dims_data.RDS"))
+# Save as CSV
+readr::write_csv(ga_dims, file.path(root_dir,"data", "itcr_ga_dims_data.csv"))
 
 ga_link_clicks <- dplyr::bind_rows(fhdsl_stats_list$link_clicks,itcr_stats_list$link_clicks) %>%
-  dplyr::filter(
-    !(website %in% not_itcr)
+  dplyr::filter(!(website %in%not_itcr))
 
- 
-# Save RDS
-saveRDS(ga_link_clicks, file.path(root_dir, "data","itcr_ga_link_click_data.RDS"))
+# Save as CSV
+readr::write_csv(ga_link_clicks, file.path(root_dir,"data", "itcr_ga_link_click_data.csv"))
 
 manual_course_info <- googlesheets4::read_sheet(
   "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit#gid=1550012125", sheet = "Course_data",
@@ -73,28 +69,29 @@ itcr_course_data <- ga_metrics %>%
     website == "Advanced Reproducibility in Cancer Informatics" ~ "Advanced Reproducibility",
     TRUE ~ website))
 
-# Save these to TSVs
-readr::write_tsv(itcr_course_data, file.path(root_dir,"data", "itcr_course_metrics.tsv"))
+# Save these to CSVs
+readr::write_csv(itcr_course_data, file.path(root_dir,"data", "itcr_course_metrics.csv"))
 
 # ITCR Google Drive
 itcr_drive_id <- "https://drive.google.com/drive/folders/0AJb5Zemj0AAkUk9PVA"
 itcr_slido_data <- get_slido_files(itcr_drive_id)
 
-# Save RDS
-saveRDS(itcr_slido_data, file.path("data", "itcr_slido_data.RDS"))
+# Save these to CSVs
+readr::write_csv(itcr_slido_data, file.path(root_dir,"data", "itcr_slido_data.csv"))
 
 collabs <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit#gid=0")
 
-# Save this to a TSV
-readr::write_tsv(collabs, file.path(root_dir, "data", "collabs.tsv"))
+# Save this to a CSV
+readr::write_csv(collabs, file.path(root_dir, "data", "collabs.csv"))
 
 loqui_usage <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1G_HTU-bv2k5txExP8EH3ScUfGqtW1P3syThD84Z-g9k/edit#gid=0")
 
-# Save this to a TSV
-readr::write_tsv(loqui_usage, file.path(root_dir,"data", "loqui_usage.tsv"))
+# Save this to a CSV
+readr::write_csv(loqui_usage, file.path(root_dir,"data", "loqui_usage.csv"))
 
 career_stage_counts <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit#gid=8290691", range = "Workshop attendee type")
-readr::write_tsv(career_stage_counts, file.path(root_dir, "data", "career_stage_counts.tsv"))
+# Save this to a CSV
+readr::write_csv(career_stage_counts, file.path(root_dir, "data", "career_stage_counts.csv"))
 
 repos <- c(
   "fhdsl/metricminer",
@@ -129,7 +126,8 @@ repos <- c(
 
 gh_metrics <- get_multiple_repos_metrics(repo_names = repos)
 
-saveRDS(gh_metrics, file.path(root_dir,"data", "itcr_gh_metrics.RDS"))
+# Save this to a CSV
+readr::write_csv(gh_metrics, file.path(root_dir, "data", "itcr_gh_metrics.csv"))
 
 
 # CRAN Download Stats
@@ -151,7 +149,7 @@ download_stats_to_plot <- download_stats %>%
   ungroup()
 
 # Save this to a TSV
-readr::write_tsv(download_stats_to_plot, file.path(root_dir,"data", "cran_download_stats.tsv"))
+readr::write_csv(download_stats_to_plot, file.path(root_dir,"data", "cran_download_stats.csv"))
 
 
 
@@ -214,7 +212,7 @@ open_meeting_attendance <- gsub("\n$", "", result)
 
 open_meeting_attendance <- data.frame(names = open_meeting_attendance)
 
-# Save this to a TSV
-readr::write_tsv(open_meeting_attendance, file.path(root_dir, "data", "open_meeting_attendance.tsv"))
+# Save this to a CSV
+readr::write_csv(open_meeting_attendance, file.path(root_dir, "data", "open_meeting_attendance.csv"))
 
 sessionInfo()
