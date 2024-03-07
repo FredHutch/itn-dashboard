@@ -1,11 +1,12 @@
+# Download that ITN data so that it can be used by the dashboard.
 library(metricminer)
 library(magrittr)
 library(httr2)
 library(googlesheets4)
 library(purrr)
+library(dplyr)
+library(tidyr)
 library(stringr)
-
-# Download that ITN data so that it can be used by the dashboard.
 
 # Find .git root directory
 root_dir <- rprojroot::find_root(rprojroot::has_dir(".git"))
@@ -38,97 +39,51 @@ itcr_stats_list <- get_all_ga_metrics(account_id = itcr_account_id)
 # There's some google analytics that aren't ITCR courses
 not_itcr <- c("hutchdatasci", "whoiswho", "MMDS", "FH Cluster 101", "AnVIL_Researcher_Journey")
 
-# Set up each data frame
-ga_metrics <- dplyr::bind_rows(fhdsl_stats_list$metrics ,itcr_stats_list$metrics) %>%
+# itcr_ga_metric_data.csv ----
+itcr_ga_metric_data <- dplyr::bind_rows(fhdsl_stats_list$metrics ,itcr_stats_list$metrics) %>%
   dplyr::filter(!(website %in%not_itcr))
 
 # Save as CSV
-readr::write_csv(ga_metrics, file.path(root_dir,"data", "itcr_ga_metric_data.csv"))
+readr::write_csv(itcr_ga_metric_data, file.path(root_dir,"data", "itcr_ga_metric_data.csv"))
 
-ga_dims <- dplyr::bind_rows(fhdsl_stats_list$dimensions, itcr_stats_list$dimensions) %>%
-  dplyr::filter(!(website %in%not_itcr))
 
-# Save as CSV
-readr::write_csv(ga_dims, file.path(root_dir,"data", "itcr_ga_dims_data.csv"))
 
-ga_link_clicks <- dplyr::bind_rows(fhdsl_stats_list$link_clicks,itcr_stats_list$link_clicks) %>%
-  dplyr::filter(!(website %in%not_itcr))
 
-# Save as CSV
-readr::write_csv(ga_link_clicks, file.path(root_dir,"data", "itcr_ga_link_click_data.csv"))
 
+# itcr_course_metrics.csv ----
 manual_course_info <- googlesheets4::read_sheet(
   "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit#gid=1550012125", sheet = "Course_data",
   col_types = "ccDDDciii") %>%
   dplyr::mutate_if(is.numeric.Date, lubridate::ymd)
 
 # Join this all together
-itcr_course_data <- ga_metrics %>%
+itcr_course_metrics <- itcr_ga_metric_data %>%
   dplyr::left_join(manual_course_info) %>%
   dplyr::mutate(website = dplyr::case_when(
     website == "Advanced Reproducibility in Cancer Informatics" ~ "Advanced Reproducibility",
     TRUE ~ website))
 
 # Save these to CSVs
-readr::write_csv(itcr_course_data, file.path(root_dir,"data", "itcr_course_metrics.csv"))
+readr::write_csv(itcr_course_metrics, file.path(root_dir,"data", "itcr_course_metrics.csv"))
+
+
+
+
+# itcr_slido_data.csv ----
 
 # ITCR Google Drive
 itcr_drive_id <- "https://drive.google.com/drive/folders/0AJb5Zemj0AAkUk9PVA"
-itcr_slido_data <- get_slido_files(itcr_drive_id)
+itcr_slido_data_raw <- get_slido_files(itcr_drive_id)
+itcr_slido_data <- itcr_slido_data$`Polls-per-user`
 
 # Save these to CSVs
 readr::write_csv(itcr_slido_data, file.path(root_dir,"data", "itcr_slido_data.csv"))
 
-collabs <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit#gid=0")
 
-# Save this to a CSV
-readr::write_csv(collabs, file.path(root_dir, "data", "collabs.csv"))
 
-loqui_usage <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1G_HTU-bv2k5txExP8EH3ScUfGqtW1P3syThD84Z-g9k/edit#gid=0")
 
-# Save this to a CSV
-readr::write_csv(loqui_usage, file.path(root_dir,"data", "loqui_usage.csv"))
 
-career_stage_counts <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit#gid=8290691", range = "Workshop attendee type")
-# Save this to a CSV
-readr::write_csv(career_stage_counts, file.path(root_dir, "data", "career_stage_counts.csv"))
-
-repos <- c(
-  "fhdsl/metricminer",
-  "fhdsl/metricminer.org",
-  "jhudsl/ottrpal",
-  "jhudsl/ari",
-  "jhudsl/cow",
-  "jhudsl/ottrproject.org",
-  "jhudsl/ottr_docker",
-  "jhudsl/ottr-reports",
-  "fhdsl/conrad",
-  "jhudsl/text2speech",
-  "jhudsl/OTTR_Quizzes",
-  "jhudsl/OTTR_Template",
-  "jhudsl/OTTR_Template_Website",
-  "jhudsl/ITCR_Tables",
-  "jhudsl/ITN_Platforms",
-  "fhdsl/Choosing_Genomics_Tools",
-  "jhudsl/Informatics_Research_Leadership",
-  "jhudsl/Documentation_and_Usability",
-  "jhudsl/Reproducibility_in_Cancer_Informatics",
-  "jhudsl/Adv_Reproducibility_in_Cancer_Informatics",
-  "fhdsl/GitHub_Automation_for_Scientists",
-  "jhudsl/Computing_for_Cancer_Informatics",
-  "fhdsl/Overleaf_and_LaTeX_for_Scientific_Articles",
-  "fhdsl/Ethical_Data_Handling_for_Cancer_Research",
-  "fhdsl/AI_for_Decision_Makers",
-  "fhdsl/AI_for_Efficient_Programming",
-  "fhdsl/NIH_Data_Sharing"
-  #"FredHutch/loqui"
-)
-
-gh_metrics <- get_multiple_repos_metrics(repo_names = repos)
-
-# Save this to a CSV
-readr::write_csv(gh_metrics, file.path(root_dir, "data", "itcr_gh_metrics.csv"))
-
+# cran_download_stats.csv ----
 
 # CRAN Download Stats
 download_stats <- cranlogs::cran_downloads(packages = c("ottrpal", "conrad", "ari", "text2speech"), 
@@ -154,7 +109,7 @@ readr::write_csv(download_stats_to_plot, file.path(root_dir,"data", "cran_downlo
 
 
 
-# OPEN Agenda Attendees
+# open_meeting_attendance.csv -----
 
 # Function that creates OAuth client for Google APIs
 google_client <- function() {
