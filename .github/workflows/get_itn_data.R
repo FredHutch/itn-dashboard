@@ -74,7 +74,7 @@ readr::write_csv(itcr_course_metrics, file.path(root_dir,"data", "itcr_course_me
 # ITCR Google Drive
 itcr_drive_id <- "https://drive.google.com/drive/folders/0AJb5Zemj0AAkUk9PVA"
 itcr_slido_data_raw <- get_slido_files(itcr_drive_id)
-itcr_slido_data <- itcr_slido_data$`Polls-per-user`
+itcr_slido_data <- itcr_slido_data_raw$`Polls-per-user`
 
 # Save these to CSVs
 readr::write_csv(itcr_slido_data, file.path(root_dir,"data", "itcr_slido_data.csv"))
