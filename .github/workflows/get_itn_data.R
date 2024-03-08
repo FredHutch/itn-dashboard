@@ -33,8 +33,8 @@ itcr_account_id <- ga_accounts %>%
   dplyr::filter(name == "itcrtraining") %>%
   dplyr::pull(id)
 
-fhdsl_stats_list <- get_all_ga_metrics(account_id = fhdsl_account_id)
-itcr_stats_list <- get_all_ga_metrics(account_id = itcr_account_id)
+fhdsl_stats_list <- get_multiple_ga_metrics(account_id = fhdsl_account_id)
+itcr_stats_list <- get_multiple_ga_metrics(account_id = itcr_account_id)
 
 # There's some google analytics that aren't ITCR courses
 not_itcr <- c("hutchdatasci", "whoiswho", "MMDS", "FH Cluster 101", "AnVIL_Researcher_Journey")
