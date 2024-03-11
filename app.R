@@ -328,13 +328,9 @@ server <- function(input, output) {
              sessions, screen_page_views, engagement_rate) %>% 
       mutate(screen_page_views_per_user = round(screen_page_views_per_user, 0),
              engagement_rate = round(engagement_rate, 2))
-  }) 
+  })
   
-  # OPEN Meeting Attendance
-  open_meeting_attendance <- reactiveFileReader(604800000, # this is how many milliseconds in 1 week
-                                                NULL,
-                                                "data/open_meeting_attendance.csv",
-                                                readr::read_csv)
+  
   
   # Plots --------
   
