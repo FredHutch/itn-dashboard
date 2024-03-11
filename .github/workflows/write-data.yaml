@@ -38,4 +38,4 @@ jobs:
           git add --force data/*
           git commit -m 'Refresh data' || echo "No changes to commit"
           git pull --allow-unrelated-histories --strategy-option=ours
-          git push -u origin main  || echo "No changes to push"
+          git push -u origin main || echo "No changes to push"
