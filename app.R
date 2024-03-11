@@ -21,6 +21,8 @@ library(DT)
 
 # Misc
 library(googlesheets4)
+# Suspend authorization
+gs4_deauth()
 
 # Everyone, Leadership, new to data science, software developers
 cbPalette <- c("#E69F02", "#56B4E9", "#009E73", "#008080") 
@@ -31,32 +33,6 @@ viridis_cc <- c("#440154", "#2c728e", "#28ae80", "#addc30")
 
 # Wordcloud 
 ud_model <- udpipe::udpipe_load_model("wordcloud-model.udpipe")
-
-results <- udpipe::udpipe_annotate(ud_model, x = poll_data$what_did_you_like_most_about_the_workshop) %>%
-  as.data.frame() %>%
-  dplyr::filter(upos %in% c("NOUN", "ADJ", "ADV")) %>%
-  mutate(lemma= tolower(lemma)) %>%
-  count(lemma)
-
-rec_results <- udpipe::udpipe_annotate(ud_model, x = poll_data$please_share_any_recommendations_you_have_for_improvements) %>%
-  as.data.frame() %>%
-  filter(upos %in% c("NOUN", "ADJ", "ADV")) %>%
-  mutate(lemma= tolower(lemma)) %>%
-  count(lemma)
-
-# Collaborations
-collabs <- readr::read_tsv(file.path("data", "collabs.tsv")) %>% 
-  separate_rows("Category", sep = ", ", ) %>% 
-  mutate(Category = trimws(Category)) %>% 
-  filter(Category != "?")
-
-# Career Stage of Workshop Registrants
-career_stage_counts <- readr::read_tsv(file.path("data", "career_stage_counts.tsv"))
-career_stage_counts_subset <- career_stage_counts[c(1:5), c(1:11)]
-career_stage_counts_final <- data.frame(Stage = colnames(career_stage_counts_subset[2:10]),
-                                        count = unlist(career_stage_counts_subset[5, c(2:10)]), 
-                                        "Trainee" = c("yes","yes","no","no","no","yes","no","yes","yes"))
-
 
 link_itn <- tags$a(
   shiny::icon("house"), "ITN",
@@ -215,10 +191,6 @@ ui <- page_navbar(
               nav_panel(
                 "ITCR Collaborations",
                 plotOutput("collaboration_itcr")
-              ),
-              nav_panel(
-                "OPEN Meeting Attendance",
-                plotOutput("open_meeting_attendance")
               )
             )
   ),
@@ -237,12 +209,12 @@ server <- function(input, output) {
   # ITCR Slido Data
   itcr_slido_data <- reactiveFileReader(604800000, # this is how many milliseconds in 1 week
                                         NULL,
-                                        "data/itcr_slido_data.csv",
+                                        "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/itcr_slido_data.csv",
                                         readr::read_csv) 
   
   # Workshops Data
   poll_data <- reactive({
-    itcr_slido_data()$`Polls-per-user` %>%
+    itcr_slido_data() %>%
       janitor::clean_names() %>% 
       mutate(merged_likely_rec = if_else(is.na(how_likely_would_you_be_to_recommend_this_workshop), how_likely_would_you_be_to_recommend_this_workshop_2, 
                                          how_likely_would_you_be_to_recommend_this_workshop))
@@ -255,18 +227,32 @@ server <- function(input, output) {
                                                                                          "Not very likely", 
                                                                                          "Somewhat likely", 
                                                                                          "Very likely")) %>% 
-      mutate(how_likely_are_you_to_use_what_you_learned_in_your_daily_work = as.factor(how_likely_are_you_to_use_what_you_learned_in_your_daily_work,
+      mutate(how_likely_are_you_to_use_what_you_learned_in_your_daily_work = factor(how_likely_are_you_to_use_what_you_learned_in_your_daily_work,
                                                                                        levels = c("Not very likely", "Somewhat likely", "Likely", "Very likely", "Extremely likely")))
   })
-    
   
   
+  results <- reactive({
+    udpipe::udpipe_annotate(ud_model, x = poll_data()$what_did_you_like_most_about_the_workshop) %>%
+      as.data.frame() %>%
+      dplyr::filter(upos %in% c("NOUN", "ADJ", "ADV")) %>%
+      mutate(lemma= tolower(lemma)) %>%
+      count(lemma)
+  })
+  
+  rec_results <- reactive({
+    udpipe::udpipe_annotate(ud_model, x = poll_data()$please_share_any_recommendations_you_have_for_improvements) %>%
+      as.data.frame() %>%
+      filter(upos %in% c("NOUN", "ADJ", "ADV")) %>%
+      mutate(lemma= tolower(lemma)) %>%
+      count(lemma)
+  }) 
   
   # ITCR Course data ----
-  itcr_course_data_raw <- reactiveFileReader(1000, 
+  itcr_course_data_raw <- reactiveFileReader(604800000, 
                                              NULL,
-                                             "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/itcr_course_metrics.tsv",
-                                             readr::read_tsv)
+                                             "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/itcr_course_metrics.csv",
+                                             readr::read_csv)
   
   itcr_course_data <- reactive({
     itcr_course_data <- itcr_course_data_raw() %>% 
@@ -300,18 +286,16 @@ server <- function(input, output) {
   
   
   # CRAN Downloads ----
-  cran_download_stats <-  reactiveFileReader(1000, 
+  cran_download_stats <-  reactiveFileReader(604800000, 
                                              NULL,
-                                             "",
+                                             "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/cran_download_stats.csv",
                                              readr::read_csv)
   
   
-  
-  
   # ITCR GA Metrics ----
-  ga_metrics <-  reactiveFileReader(1000, 
+  ga_metrics <-  reactiveFileReader(604800000, 
                                     NULL,
-                                    "",
+                                    "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/itcr_ga_metric_data.csv",
                                     readr::read_csv)
   
   user_totals <- reactive({
@@ -328,6 +312,34 @@ server <- function(input, output) {
              sessions, screen_page_views, engagement_rate) %>% 
       mutate(screen_page_views_per_user = round(screen_page_views_per_user, 0),
              engagement_rate = round(engagement_rate, 2))
+  })
+  
+  
+  # Collabs ----
+  collabs_raw <-  reactiveFileReader(604800000, 
+                                     NULL,
+                                     "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit?usp=sharing",
+                                     googlesheets4::read_sheet)
+  
+  collabs <- reactive({
+    collabs_raw() %>% 
+      separate_rows("Category", sep = ", ", ) %>% 
+      mutate(Category = trimws(Category)) %>% 
+      filter(Category != "?")
+  })
+  
+  # Career Stage ----
+  career_stage_counts <- reactiveFileReader(604800000, 
+                                            NULL,
+                                            "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit?usp=sharing",
+                                            googlesheets4::read_sheet,
+                                            range = "Workshop attendee type")
+  
+  career_stage_counts_subset <- reactive(career_stage_counts()[c(1:5), c(1:11)])
+  career_stage_counts_final <- reactive({
+    data.frame(Stage = colnames(career_stage_counts_subset()[2:10]),
+               count = unlist(career_stage_counts_subset()[5, c(2:10)]), 
+               "Trainee" = c("yes","yes","no","no","no","yes","no","yes","yes"))
   })
   
   
@@ -508,20 +520,6 @@ server <- function(input, output) {
   })
   
   
-  # OPEN Meeting Attendance
-  output$open_meeting_attendance <- renderPlot({
-    open_meeting_attendance() %>% 
-      ggplot(aes(x = date, y = attendance)) + 
-      geom_bar(stat = "identity", fill = "lightgreen") +
-      geom_text(aes(label = attendance), size = 4, vjust = - 1) +
-      theme_classic() +
-      theme(axis.text.x = element_text(angle = 45, hjust=1),
-            text = element_text(size = 17, family = "Arial")) +
-      labs(x = NULL, 
-           y = "Attendance",
-           title = "OPEN Meeting Attendance by Month")
-  })
-  
   # How Likely woud you be to recommend this workshop?
   output$recommend_workshop <- renderPlot({
     as.numeric(poll_data()$merged_likely_rec) %>%
@@ -546,7 +544,7 @@ server <- function(input, output) {
   })
   
   output$workshop_career_stage <- renderPlot({
-    ggplot(career_stage_counts_final, aes(x=reorder(Stage, -count), y=count, fill=Trainee)) +
+    ggplot(career_stage_counts_final(), aes(x=reorder(Stage, -count), y=count, fill=Trainee)) +
       geom_bar(stat = "identity") +
       xlab("Career stage") +
       ylab("Number of registrees") +
@@ -563,8 +561,8 @@ server <- function(input, output) {
   
   # What did you like most about workshop
   output$like_most_about_workshop <- renderPlot({
-    wordcloud::wordcloud(words = results$lemma, 
-                         freq = results$n,
+    wordcloud::wordcloud(words = results()$lemma, 
+                         freq = results()$n,
                          colors = c("#98fb98", "#83D475", "#355E3B"),
                          min.freq = 3, scale = c(3, .4))
   })
@@ -572,8 +570,8 @@ server <- function(input, output) {
   
   # Recommendations for Improvements
   output$recommendation_improvement <- renderPlot({
-    wordcloud::wordcloud(words = rec_results$lemma, 
-                         freq=rec_results$n,
+    wordcloud::wordcloud(words = rec_results()$lemma, 
+                         freq=rec_results()$n,
                          colors = c("#98fb98", "#83D475", "#355E3B"),
                          min.freq = 3, scale = c(4, .4))
   })
@@ -620,7 +618,7 @@ server <- function(input, output) {
   # User Totals
   output$user_totals <- renderDT({
     datatable(
-      user_totals, 
+      user_totals(), 
       colnames = c("Website", "Active Users", "Avg Session Duration"),
       options = list(lengthChange = FALSE, # remove "Show X entries"
                      searching = FALSE), # remove Search box
@@ -633,7 +631,7 @@ server <- function(input, output) {
   # User Engagement
   output$user_engagement <- renderDT({
     datatable(
-      user_engagement, 
+      user_engagement(), 
       colnames = c("Website", "Screen Page Views per User", "Sessions",
                    "Screen Page Views", "Engagement Rate"),
       options = list(lengthChange = FALSE, # remove "Show X entries"
