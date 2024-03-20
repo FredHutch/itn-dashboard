@@ -574,7 +574,7 @@ server <- function(input, output) {
     
   })
   
-  # Tables --------ddd
+  # Tables --------
   
   # User Totals
   output$user_totals <- renderDT({
