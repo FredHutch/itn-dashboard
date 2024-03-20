@@ -34,6 +34,8 @@ viridis_cc <- c("#440154", "#2c728e", "#28ae80", "#addc30")
 # Wordcloud 
 ud_model <- udpipe::udpipe_load_model("wordcloud-model.udpipe")
 
+time_interval <- 604800000
+
 link_itn <- tags$a(
   shiny::icon("house"), "ITN",
   href = "https://www.itcrtraining.org/home",
@@ -207,7 +209,7 @@ ui <- page_navbar(
 # Server ----
 server <- function(input, output) {
   # ITCR Slido Data
-  itcr_slido_data <- reactiveFileReader(604800000, # this is how many milliseconds in 1 week
+  itcr_slido_data <- reactiveFileReader(time_interval, # this is how many milliseconds in 1 week
                                         NULL,
                                         "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/itcr_slido_data.csv",
                                         readr::read_csv) 
@@ -249,7 +251,7 @@ server <- function(input, output) {
   }) 
   
   # ITCR Course data ----
-  itcr_course_data_raw <- reactiveFileReader(604800000, 
+  itcr_course_data_raw <- reactiveFileReader(time_interval, 
                                              NULL,
                                              "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/itcr_course_metrics.csv",
                                              readr::read_csv)
@@ -286,14 +288,14 @@ server <- function(input, output) {
   
   
   # CRAN Downloads ----
-  cran_download_stats <-  reactiveFileReader(604800000, 
+  cran_download_stats <-  reactiveFileReader(time_interval, 
                                              NULL,
                                              "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/cran_download_stats.csv",
                                              readr::read_csv)
   
   
   # ITCR GA Metrics ----
-  ga_metrics <-  reactiveFileReader(604800000, 
+  ga_metrics <-  reactiveFileReader(time_interval, 
                                     NULL,
                                     "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/itcr_ga_metric_data.csv",
                                     readr::read_csv)
@@ -316,7 +318,7 @@ server <- function(input, output) {
   
   
   # Collabs ----
-  collabs_raw <-  reactiveFileReader(604800000, 
+  collabs_raw <-  reactiveFileReader(time_interval, 
                                      NULL,
                                      "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit?usp=sharing",
                                      googlesheets4::read_sheet)
@@ -329,7 +331,7 @@ server <- function(input, output) {
   })
   
   # Career Stage ----
-  career_stage_counts <- reactiveFileReader(604800000, 
+  career_stage_counts <- reactiveFileReader(time_interval, 
                                             NULL,
                                             "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit?usp=sharing",
                                             googlesheets4::read_sheet,
