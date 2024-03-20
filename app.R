@@ -1,11 +1,17 @@
+library(shiny)
+
+# Packages for Data Manipulation
 library(dplyr)
 library(tidyr)
 library(readr)
 library(lubridate)
 library(janitor)
-library(shiny)
+
+# Packages for Word Clouds
 library(udpipe)
 library(wordcloud)
+
+# Packages for Bootstrap
 library(bslib)
 library(bsicons)
 library(htmltools)
@@ -13,109 +19,22 @@ library(ggplot2)
 library(fontawesome)
 library(DT)
 
-# Datasets ----
-
-# ITCR Course data
-itcr_course_data <- read_tsv(file.path("data", "itcr_course_metrics.tsv")) %>% 
-  mutate(target_audience = replace_na(target_audience, "Everyone"))
-
-itcr_course_data$webAndEnrollmentTotals <- itcr_course_data %>%
-  select(website_count, coursera_count, leanpub_count) %>% rowSums(na.rm = TRUE)
-
-itcr_course_data_long <- itcr_course_data %>% 
-  select(c("website", 
-           "totalUsers",
-           "coursera_count", 
-           "leanpub_count", 
-           "target_audience")) %>%
-  tidyr::pivot_longer(!c(website, target_audience),
-                      names_to = "modality", 
-                      values_to = "learner_count") %>%
-  filter(!(website %in% c("ITN Website", "OTTR website", "metricminer.org"))) %>%
-  mutate(modality = case_when(
-    modality == "leanpub_count" ~ "Total Leanpub Enrollments", 
-    modality == "coursera_count" ~ "Total Coursera Enrollments",
-    modality == "totalUsers" ~ "Website Learners", 
-    TRUE ~ modality
-  ))
-
-# Google Analytics metrics
-ga_metrics <- readRDS(file.path("data","itcr_ga_metric_data.RDS"))
-
-user_totals <- ga_metrics %>% 
-  janitor::clean_names() %>% 
-  select(website, active_users, average_session_duration) %>% 
-  mutate(average_session_duration = round(average_session_duration, digits = 0))
-
-user_engagement <- ga_metrics %>% 
-  janitor::clean_names() %>% 
-  select(website, screen_page_views_per_user, 
-         sessions, screen_page_views, engagement_rate) %>% 
-  mutate(screen_page_views_per_user = round(screen_page_views_per_user, 0),
-         engagement_rate = round(engagement_rate, 2))
+# Misc
+library(googlesheets4)
+# Suspend authorization
+gs4_deauth()
 
 # Everyone, Leadership, new to data science, software developers
 cbPalette <- c("#E69F02", "#56B4E9", "#009E73", "#008080") 
-
-
-# OPEN Meeting Attendance
-open_meeting_attendance <- read_csv("data/open_meeting_attendance.csv")
-
-# CRAN Download Stats
-cran_download_stats <- read_csv("data/cran_download_stats.csv")
 
 xlabel_view <- c(rep(c("black", "transparent", "transparent", "transparent"), 41), "black", "transparent") #166 rows
 #cc <- rev(c("#fde725", "#addc30", "#5ec962", "#28ae80", "#21918c", "#2c728e", "#3b528b", "#472d7b", "#440154"))
 viridis_cc <- c("#440154", "#2c728e", "#28ae80", "#addc30")
 
-# ITCR Slido Data
-itcr_slido_data <- readRDS(file.path("data", "itcr_slido_data.RDS"))
-
-# Workshops Data
-poll_data <- itcr_slido_data$`Polls-per-user` %>%
-  janitor::clean_names()
-poll_data <- poll_data %>% 
-  mutate(merged_likely_rec = if_else(is.na(how_likely_would_you_be_to_recommend_this_workshop), how_likely_would_you_be_to_recommend_this_workshop_2, 
-                                     how_likely_would_you_be_to_recommend_this_workshop))
-
-poll_data_subset <- poll_data %>%
-  dplyr::filter(how_likely_are_you_to_use_what_you_learned_in_your_daily_work %in% c("Extremely likely", 
-                                                                                     "Likely",
-                                                                                     "Not very likely", 
-                                                                                     "Somewhat likely", 
-                                                                                     "Very likely"))
-
-poll_data_subset$how_likely_are_you_to_use_what_you_learned_in_your_daily_work <- factor(poll_data_subset$how_likely_are_you_to_use_what_you_learned_in_your_daily_work, 
-                                                                                         levels = c("Not very likely",  "Somewhat likely", "Likely", "Very likely", "Extremely likely"))
-
 # Wordcloud 
 ud_model <- udpipe::udpipe_load_model("wordcloud-model.udpipe")
 
-results <- udpipe::udpipe_annotate(ud_model, x = poll_data$what_did_you_like_most_about_the_workshop) %>%
-  as.data.frame() %>%
-  dplyr::filter(upos %in% c("NOUN", "ADJ", "ADV")) %>%
-  mutate(lemma= tolower(lemma)) %>%
-  count(lemma)
-
-rec_results <- udpipe::udpipe_annotate(ud_model, x = poll_data$please_share_any_recommendations_you_have_for_improvements) %>%
-  as.data.frame() %>%
-  filter(upos %in% c("NOUN", "ADJ", "ADV")) %>%
-  mutate(lemma= tolower(lemma)) %>%
-  count(lemma)
-
-# Collaborations
-collabs <- readr::read_tsv(file.path("data", "collabs.tsv")) %>% 
-  separate_rows("Category", sep = ", ", ) %>% 
-  mutate(Category = trimws(Category)) %>% 
-  filter(Category != "?")
-
-# Career Stage of Workshop Registrants
-career_stage_counts <- readr::read_tsv(file.path("data", "career_stage_counts.tsv"))
-career_stage_counts_subset <- career_stage_counts[c(1:5), c(1:11)]
-career_stage_counts_final <- data.frame(Stage = colnames(career_stage_counts_subset[2:10]),
-                                        count = unlist(career_stage_counts_subset[5, c(2:10)]), 
-                                        "Trainee" = c("yes","yes","no","no","no","yes","no","yes","yes"))
-
+time_interval <- 604800000
 
 link_itn <- tags$a(
   shiny::icon("house"), "ITN",
@@ -274,10 +193,6 @@ ui <- page_navbar(
               nav_panel(
                 "ITCR Collaborations",
                 plotOutput("collaboration_itcr")
-              ),
-              nav_panel(
-                "OPEN Meeting Attendance",
-                plotOutput("open_meeting_attendance")
               )
             )
   ),
@@ -293,13 +208,163 @@ ui <- page_navbar(
 
 # Server ----
 server <- function(input, output) {
+  # ITCR Slido Data
+  itcr_slido_data <- reactiveFileReader(time_interval, # this is how many milliseconds in 1 week
+                                        NULL,
+                                        "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/itcr_slido_data.csv",
+                                        readr::read_csv) 
+  
+  # Workshops Data
+  poll_data <- reactive({
+    itcr_slido_data() %>%
+      janitor::clean_names() %>% 
+      mutate(merged_likely_rec = if_else(is.na(how_likely_would_you_be_to_recommend_this_workshop), how_likely_would_you_be_to_recommend_this_workshop_2, 
+                                         how_likely_would_you_be_to_recommend_this_workshop))
+  })
+  
+  poll_data_subset <- reactive({
+    poll_data() %>%
+      dplyr::filter(how_likely_are_you_to_use_what_you_learned_in_your_daily_work %in% c("Extremely likely", 
+                                                                                         "Likely",
+                                                                                         "Not very likely", 
+                                                                                         "Somewhat likely", 
+                                                                                         "Very likely")) %>% 
+      mutate(how_likely_are_you_to_use_what_you_learned_in_your_daily_work = factor(how_likely_are_you_to_use_what_you_learned_in_your_daily_work,
+                                                                                    levels = c("Not very likely", "Somewhat likely", "Likely", "Very likely", "Extremely likely")))
+  })
+  
+  
+  results <- reactive({
+    udpipe::udpipe_annotate(ud_model, x = poll_data()$what_did_you_like_most_about_the_workshop) %>%
+      as.data.frame() %>%
+      dplyr::filter(upos %in% c("NOUN", "ADJ", "ADV")) %>%
+      mutate(lemma= tolower(lemma)) %>%
+      count(lemma)
+  })
+  
+  rec_results <- reactive({
+    udpipe::udpipe_annotate(ud_model, x = poll_data()$please_share_any_recommendations_you_have_for_improvements) %>%
+      as.data.frame() %>%
+      filter(upos %in% c("NOUN", "ADJ", "ADV")) %>%
+      mutate(lemma= tolower(lemma)) %>%
+      count(lemma)
+  }) 
+  
+  # ITCR Course data ----
+  itcr_course_data_raw <- reactiveFileReader(time_interval, 
+                                             NULL,
+                                             "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/itcr_course_metrics.csv",
+                                             readr::read_csv)
+  
+  itcr_course_data <- reactive({
+    itcr_course_data <- itcr_course_data_raw() %>% 
+      mutate(target_audience = replace_na(target_audience, "Everyone"))
+    
+    itcr_course_data$webAndEnrollmentTotals <- itcr_course_data %>%
+      select(website_count, coursera_count, leanpub_count) %>% 
+      rowSums(na.rm = TRUE)
+    
+    itcr_course_data
+  })
+  
+  itcr_course_data_long <- reactive({ 
+    itcr_course_data() %>% 
+      select(c("website", 
+               "totalUsers",
+               "coursera_count", 
+               "leanpub_count", 
+               "target_audience")) %>%
+      tidyr::pivot_longer(!c(website, target_audience),
+                          names_to = "modality", 
+                          values_to = "learner_count") %>%
+      filter(!(website %in% c("ITN Website", "OTTR website", "metricminer.org"))) %>%
+      mutate(modality = case_when(
+        modality == "leanpub_count" ~ "Total Leanpub Enrollments", 
+        modality == "coursera_count" ~ "Total Coursera Enrollments",
+        modality == "totalUsers" ~ "Website Learners", 
+        TRUE ~ modality
+      ))
+  })
+  
+  
+  # CRAN Downloads ----
+  cran_download_stats <-  reactiveFileReader(time_interval, 
+                                             NULL,
+                                             "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/cran_download_stats.csv",
+                                             readr::read_csv)
+  
+  
+  # ITCR GA Metrics ----
+  ga_metrics <-  reactiveFileReader(time_interval, 
+                                    NULL,
+                                    "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/itcr_ga_metric_data.csv",
+                                    readr::read_csv)
+  
+  user_totals <- reactive({
+    ga_metrics() %>% 
+      janitor::clean_names() %>% 
+      select(website, active_users, average_session_duration) %>% 
+      mutate(average_session_duration = round(average_session_duration, digits = 0))
+  })
+  
+  user_engagement <- reactive({
+    ga_metrics() %>% 
+      janitor::clean_names() %>% 
+      select(website, screen_page_views_per_user, 
+             sessions, screen_page_views, engagement_rate) %>% 
+      mutate(screen_page_views_per_user = round(screen_page_views_per_user, 0),
+             engagement_rate = round(engagement_rate, 2))
+  })
+  
+  
+  # Collabs ----
+  collabs_raw <-  reactiveFileReader(time_interval, 
+                                     NULL,
+                                     "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit?usp=sharing",
+                                     googlesheets4::read_sheet)
+  
+  collabs <- reactive({
+    collabs_raw() %>% 
+      separate_rows("Category", sep = ", ", ) %>% 
+      mutate(Category = trimws(Category)) %>% 
+      filter(Category != "?")
+  })
+  
+  # Career Stage ----
+  career_stage_counts_raw <- reactiveFileReader(time_interval, 
+                                                NULL,
+                                                "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit?usp=sharing",
+                                                googlesheets4::read_sheet,
+                                                range = "Copy of Workshop attendee type")
+  
+  career_stage_counts_summed <- reactive({
+    tmp <- career_stage_counts_raw() %>%
+      select(-1) %>% 
+      slice(1:(n() - 1))
+    
+    colSums(tmp)
+  })
+  
+  career_stage_processed <- reactive({
+    career_stage_processed <- data.frame(
+      Stage = names(career_stage_counts_summed()),
+      count = as.numeric(career_stage_counts_summed()),
+      stringsAsFactors = FALSE
+    )
+    
+    career_stage_processed$Trainee <- ifelse(career_stage_processed$Stage %in% c("Phd student", "postdoc", "Master's student", "Research tech", "undergrad"), "yes",
+                                             "no")
+    
+    career_stage_processed
+  })
+  
   # Plots --------
   
   # Unique Visitors to Websites
   output$unique_visitor_website <- renderPlot({
-    ggplot(itcr_course_data, aes(x = reorder(website, -totalUsers), 
-                                 y = totalUsers, 
-                                 fill = target_audience)) +
+    ggplot(itcr_course_data(), aes(x = reorder(website, -totalUsers), 
+                                   y = totalUsers, 
+                                   fill = target_audience)) +
       geom_bar(stat = "identity") +
       geom_text(aes(label = totalUsers), size = 4, vjust = - 1) +
       theme_classic() +
@@ -317,7 +382,7 @@ server <- function(input, output) {
   
   # Engagement Stats
   output$engagement_stat <- renderPlot({
-    itcr_course_data %>% 
+    itcr_course_data() %>% 
       janitor::clean_names() %>%
       select(website, screen_page_views_per_user, average_session_duration, 
              event_count_per_user, engagement_rate, target_audience) %>%
@@ -349,7 +414,7 @@ server <- function(input, output) {
   
   # Learners by Modality
   output$learner_by_modality <- renderPlot({
-    itcr_course_data_long %>% 
+    itcr_course_data_long() %>% 
       group_by(modality, target_audience) %>% 
       summarize(total_learners = sum(learner_count, na.rm = TRUE)) %>%
       ggplot(aes(x = reorder(modality, -total_learners), y = total_learners, fill = target_audience)) +
@@ -372,7 +437,7 @@ server <- function(input, output) {
   
   # Learner by Course
   output$learner_by_course <- renderPlot({
-    itcr_course_data_long %>% 
+    itcr_course_data_long() %>% 
       group_by(website, target_audience) %>% 
       summarize(total_learners = sum(learner_count, na.rm = TRUE)) %>%
       ggplot(aes(y = total_learners, x = reorder(website, -total_learners), fill = target_audience)) + 
@@ -394,7 +459,8 @@ server <- function(input, output) {
   
   # Coursera Learners
   output$coursera_learner <- renderPlot({
-    ggplot(itcr_course_data %>% filter(coursera_count > 0), aes(x = reorder(website, -coursera_count), y = coursera_count, fill = target_audience)) +
+    ggplot(itcr_course_data() %>% filter(coursera_count > 0), 
+           aes(x = reorder(website, -coursera_count), y = coursera_count, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
       theme_classic() +
       theme(axis.text.x = element_text(angle = 60, hjust=1)) +
@@ -411,7 +477,8 @@ server <- function(input, output) {
   
   # Leanpub Learners
   output$leanpub_learner <- renderPlot({
-    ggplot(itcr_course_data %>% filter(leanpub_count > 0) , aes(x = reorder(website, -leanpub_count), y = leanpub_count, fill = target_audience)) +
+    ggplot(itcr_course_data() %>% filter(leanpub_count > 0),
+           aes(x = reorder(website, -leanpub_count), y = leanpub_count, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
       theme_classic() +
       theme(axis.text.x = element_text(angle = 60, hjust=1)) +
@@ -428,7 +495,7 @@ server <- function(input, output) {
   
   # Learners by Launch Date
   output$learner_by_launch_date <- renderPlot({
-    itcr_course_data %>% 
+    itcr_course_data() %>% 
       filter(!(website %in% c("ITN Website", "OTTR website", "metricminer.org"))) %>%
       mutate(duration = today() - website_launch) %>%
       ggplot(aes(x = duration, y = webAndEnrollmentTotals, color = target_audience)) + 
@@ -448,7 +515,7 @@ server <- function(input, output) {
   
   # CRAN Download Stats
   output$cran_download_stats <- renderPlot({
-    cran_download_stats %>% 
+    cran_download_stats() %>% 
       ggplot(aes(Month, monthly_downloads, group=package, color = package)) + 
       geom_line() + 
       geom_point() +
@@ -467,23 +534,9 @@ server <- function(input, output) {
   })
   
   
-  # OPEN Meeting Attendance
-  output$open_meeting_attendance <- renderPlot({
-    open_meeting_attendance %>% 
-      ggplot(aes(x = date, y = attendance)) + 
-      geom_bar(stat = "identity", fill = "lightgreen") +
-      geom_text(aes(label = attendance), size = 4, vjust = - 1) +
-      theme_classic() +
-      theme(axis.text.x = element_text(angle = 45, hjust=1),
-            text = element_text(size = 17, family = "Arial")) +
-      labs(x = NULL, 
-           y = "Attendance",
-           title = "OPEN Meeting Attendance by Month")
-  })
-  
   # How Likely woud you be to recommend this workshop?
   output$recommend_workshop <- renderPlot({
-    as.numeric(poll_data$merged_likely_rec) %>%
+    as.numeric(poll_data()$merged_likely_rec) %>%
       qplot(geom = "bar") +
       geom_bar(fill = "#CBC3E3") +
       theme_classic() +
@@ -494,7 +547,7 @@ server <- function(input, output) {
   
   # Workshop Relevance Feedback
   output$workshop_relevance_feedback <- renderPlot({
-    ggplot(poll_data_subset, aes(x = how_likely_are_you_to_use_what_you_learned_in_your_daily_work)) +
+    ggplot(poll_data_subset(), aes(x = how_likely_are_you_to_use_what_you_learned_in_your_daily_work)) +
       geom_bar(stat = "count", fill = "#CBC3E3") +
       theme_classic() +
       theme(axis.text.x = element_text(angle = 45, hjust=1),
@@ -505,7 +558,7 @@ server <- function(input, output) {
   })
   
   output$workshop_career_stage <- renderPlot({
-    ggplot(career_stage_counts_final, aes(x=reorder(Stage, -count), y=count, fill=Trainee)) +
+    ggplot(career_stage_processed(), aes(x=reorder(Stage, -count), y=count, fill=Trainee)) +
       geom_bar(stat = "identity") +
       xlab("Career stage") +
       ylab("Number of registrees") +
@@ -522,8 +575,8 @@ server <- function(input, output) {
   
   # What did you like most about workshop
   output$like_most_about_workshop <- renderPlot({
-    wordcloud::wordcloud(words = results$lemma, 
-                         freq = results$n,
+    wordcloud::wordcloud(words = results()$lemma, 
+                         freq = results()$n,
                          colors = c("#98fb98", "#83D475", "#355E3B"),
                          min.freq = 3, scale = c(3, .4))
   })
@@ -531,8 +584,8 @@ server <- function(input, output) {
   
   # Recommendations for Improvements
   output$recommendation_improvement <- renderPlot({
-    wordcloud::wordcloud(words = rec_results$lemma, 
-                         freq=rec_results$n,
+    wordcloud::wordcloud(words = rec_results()$lemma, 
+                         freq=rec_results()$n,
                          colors = c("#98fb98", "#83D475", "#355E3B"),
                          min.freq = 3, scale = c(4, .4))
   })
@@ -540,7 +593,7 @@ server <- function(input, output) {
   
   # Collaborations - ITCR Funded
   output$collaboration_itcr <- renderPlot({
-    collabs %>% 
+    collabs() %>% 
       filter(ITN_ITCR_or_external == "ITCR") %>%
       count(Category) %>%
       ggplot(aes(y =n, x=reorder(Category, -n), fill = Category )) +
@@ -558,7 +611,7 @@ server <- function(input, output) {
   
   # Collaborations - All
   output$collaboration_all <- renderPlot({
-    collabs %>% 
+    collabs() %>% 
       count(Category) %>% 
       ggplot(aes(y = n, x = reorder(Category,-n), fill = Category)) +
       geom_bar(position = "dodge", stat = "identity") +
@@ -579,7 +632,7 @@ server <- function(input, output) {
   # User Totals
   output$user_totals <- renderDT({
     datatable(
-      user_totals, 
+      user_totals(), 
       colnames = c("Website", "Active Users", "Avg Session Duration"),
       options = list(lengthChange = FALSE, # remove "Show X entries"
                      searching = FALSE), # remove Search box
@@ -592,7 +645,7 @@ server <- function(input, output) {
   # User Engagement
   output$user_engagement <- renderDT({
     datatable(
-      user_engagement, 
+      user_engagement(), 
       colnames = c("Website", "Screen Page Views per User", "Sessions",
                    "Screen Page Views", "Engagement Rate"),
       options = list(lengthChange = FALSE, # remove "Show X entries"
