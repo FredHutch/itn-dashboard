@@ -230,7 +230,7 @@ server <- function(input, output) {
                                                                                          "Somewhat likely", 
                                                                                          "Very likely")) %>% 
       mutate(how_likely_are_you_to_use_what_you_learned_in_your_daily_work = factor(how_likely_are_you_to_use_what_you_learned_in_your_daily_work,
-                                                                                       levels = c("Not very likely", "Somewhat likely", "Likely", "Very likely", "Extremely likely")))
+                                                                                    levels = c("Not very likely", "Somewhat likely", "Likely", "Very likely", "Extremely likely")))
   })
   
   
@@ -331,20 +331,32 @@ server <- function(input, output) {
   })
   
   # Career Stage ----
-  career_stage_counts <- reactiveFileReader(time_interval, 
-                                            NULL,
-                                            "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit?usp=sharing",
-                                            googlesheets4::read_sheet,
-                                            range = "Workshop attendee type")
+  career_stage_counts_raw <- reactiveFileReader(time_interval, 
+                                                NULL,
+                                                "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit?usp=sharing",
+                                                googlesheets4::read_sheet,
+                                                range = "Copy of Workshop attendee type")
   
-  career_stage_counts_subset <- reactive(career_stage_counts()[c(1:5), c(1:11)])
-  career_stage_counts_final <- reactive({
-    data.frame(Stage = colnames(career_stage_counts_subset()[2:10]),
-               count = unlist(career_stage_counts_subset()[5, c(2:10)]), 
-               "Trainee" = c("yes","yes","no","no","no","yes","no","yes","yes"))
+  career_stage_counts_summed <- reactive({
+    tmp <- career_stage_counts_raw() %>%
+      select(-1) %>% 
+      slice(1:(n() - 1))
+    
+    colSums(tmp)
   })
   
-  
+  career_stage_processed <- reactive({
+    career_stage_processed <- data.frame(
+      Stage = names(career_stage_counts_summed()),
+      count = as.numeric(career_stage_counts_summed()),
+      stringsAsFactors = FALSE
+    )
+    
+    career_stage_processed$Trainee <- ifelse(career_stage_processed$Stage %in% c("Phd student", "postdoc", "Master's student", "Research tech", "undergrad"), "yes",
+                                             "no")
+    
+    career_stage_processed
+  })
   
   # Plots --------
   
@@ -546,7 +558,7 @@ server <- function(input, output) {
   })
   
   output$workshop_career_stage <- renderPlot({
-    ggplot(career_stage_counts_final(), aes(x=reorder(Stage, -count), y=count, fill=Trainee)) +
+    ggplot(career_stage_processed(), aes(x=reorder(Stage, -count), y=count, fill=Trainee)) +
       geom_bar(stat = "identity") +
       xlab("Career stage") +
       ylab("Number of registrees") +
