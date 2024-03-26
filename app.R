@@ -408,7 +408,7 @@ server <- function(input, output) {
    })
   # Caption
   output$unique_visitor_website_caption <- renderText({
-    "Number of visitors for various educational resources, indicating that the ITN Website, aimed at a general audience, is the most frequented, followed by targeted resources for specific groups such as leadership and those new to data."
+    "Number of visitors for various educational resources."
   })
   
   # Engagement Stats
@@ -494,7 +494,7 @@ server <- function(input, output) {
   })
   # Caption
   output$learner_by_course_caption <- renderText({
-    "Total number of learners enrolled in each course, segmented by target audience categories, indicating the highest enrollment in courses related to cancer informatics and usability, with noticeable variations across different educational offerings."
+    "Total number of learners enrolled in each course, segmented by target audience categories."
   })
   
   
@@ -640,7 +640,7 @@ server <- function(input, output) {
   })
   # Caption
   output$workshop_career_stage_caption <- renderText({
-    "Distribution of workshop registrants across different career stages, with the majority being PhD students and postdocs, and a distinction between trainees and non-trainees indicated by color."
+    "Distribution of workshop registrants across different career stages and a distinction between trainees and non-trainees indicated by color."
   })
   
   
