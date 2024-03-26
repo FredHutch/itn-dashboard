@@ -403,12 +403,11 @@ server <- function(input, output) {
            y = "Total # of Visitors",
            fill = "Target Audience",
            title = "Visitor Distribution across Educational Resources") +
-      ylim(c(0, 6000)) + 
       scale_fill_manual(values=cbPalette)
    })
   # Caption
   output$unique_visitor_website_caption <- renderText({
-    "Number of visitors for various educational resources."
+    "Number of visitors for various educational resources, segmented by different target audience categories: everyone, leadership, new to data, and software developers."
   })
   
   # Engagement Stats
