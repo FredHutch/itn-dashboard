@@ -469,7 +469,7 @@ server <- function(input, output) {
   })
   # Caption
   output$learner_by_modality_caption <- renderText({
-    "Level of engagement in courses by modality, segmented by different target audience categories—Everyone, Leadership, New to data, and Software developers. It contrasts the number of visitors/enrollees across website learners and total course enrollments."
+    "Level of engagement in courses by modality, segmented by different target audience categories: everyone, leadership, new to data, and software developers. It contrasts the number of visitors/enrollees across website learners and total course enrollments."
   })
   
   
@@ -640,7 +640,7 @@ server <- function(input, output) {
   })
   # Caption
   output$workshop_career_stage_caption <- renderText({
-    "Distribution of workshop registrants across different career stages, with the majority being PhD students and postdocs, and a distinction between trainees and non-trainees indicated by colo"
+    "Distribution of workshop registrants across different career stages, with the majority being PhD students and postdocs, and a distinction between trainees and non-trainees indicated by color."
   })
   
   
@@ -654,7 +654,7 @@ server <- function(input, output) {
   })
   # Caption
   output$like_most_about_workshop_caption <- renderText({
-    "Terms like 'interactive', 'hands-on', 'activity', and 'how' suggesting a focus on practical engagement and application, as well as the importance of the workshop's format and content delivery."
+    "This word cloud shows the most used terms in workshop reviews when asked 'what did you like most about the workshop?' Terms like 'interactive', 'hands-on', 'activity', and 'how' suggests workshop participants really enjoy the interactivity of the workshops."
   })
   
   
@@ -667,7 +667,7 @@ server <- function(input, output) {
   })
   # Caption
   output$recommendation_improvement_caption <- renderText({
-    "Feedback themes for a workshop, with the most significant focus on 'more', 'how', 'time', and 'example', suggesting participants are interested in detailed explanations, practical examples, and perhaps more time allocated for these activities."
+    "Feedback themes for a workshop, with the most significant focus on 'more', 'how', 'time', and 'example', suggesting participants are interested in detailed explanations, practical examples, and perhaps more time or more workshop offerings. "
   })
 
   # Collaborations - All
@@ -688,7 +688,7 @@ server <- function(input, output) {
   })
   # Caption
   output$collaboration_all_caption <- renderText({
-    "Distribution of various academic and professional collaborations, such as manuscript authorship, course development, and networking events, showing how frequently each collaboration was completed."
+    "This plot shows the large variety of collaborations and engagements with the ITN. Distribution of various academic and professional collaborations, such as manuscript authorship, course development, and networking events, showing how frequently each collaboration was completed."
   })
   
   # Collaborations - ITCR Funded
@@ -710,7 +710,7 @@ server <- function(input, output) {
   })
   # Caption
   output$collaboration_itcr_caption <- renderText({
-    "The number of individuals who have helped with each type of collaboration within the ITCR community. Most individuals were ITCR investigators but some were trainees or scientific staff."
+    "This plot also shows the number of collaborations but only collaborations that were completed with ITCR funded individuals. The number of individuals who have helped with each type of collaboration within the ITCR community. Most individuals were ITCR investigators but some were trainees or scientific staff."
   })
   
   
