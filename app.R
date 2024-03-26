@@ -72,31 +72,45 @@ ui <- page_navbar(
                 title = NULL,
                 nav_panel(
                   "Unique Visitors to Websites",
-                  plotOutput("unique_visitor_website")
+                  plotOutput("unique_visitor_website"),
+                  br(),
+                  textOutput("unique_visitor_website_caption"),
                 ),
                 nav_panel(
                   "Engagement Stats",
-                  plotOutput("engagement_stat")
+                  plotOutput("engagement_stat"),
+                  br(),
+                  textOutput("engagement_stat_caption")
                 ),
                 nav_panel(
                   "Learners by Modality",
-                  plotOutput("learner_by_modality")
+                  plotOutput("learner_by_modality"),
+                  br(),
+                  textOutput("learner_by_modality_caption")
                 ),
                 nav_panel(
                   "Learners by Course",
-                  plotOutput("learner_by_course")
+                  plotOutput("learner_by_course"),
+                  br(),
+                  textOutput("learner_by_course_caption")
                 ),
                 nav_panel(
                   "Coursera Learners",
-                  plotOutput("coursera_learner")
+                  plotOutput("coursera_learner"),
+                  br(),
+                  textOutput("coursera_learner_caption")
                 ),
                 nav_panel(
                   "Leanpub Learners",
-                  plotOutput("leanpub_learner")
+                  plotOutput("leanpub_learner"),
+                  br(),
+                  textOutput("leanpub_learner_caption")
                 ),
                 nav_panel(
                   "Learners by Launch Date",
-                  plotOutput("learner_by_launch_date")
+                  plotOutput("learner_by_launch_date"),
+                  br(),
+                  textOutput("learner_by_launch_date_caption")
                 )
               ),
               navset_card_underline(
@@ -126,15 +140,21 @@ ui <- page_navbar(
                 title = NULL,
                 nav_panel(
                   "Recommend this Workshop?",
-                  plotOutput("recommend_workshop")
+                  plotOutput("recommend_workshop"),
+                  br(),
+                  textOutput("recommend_workshop_caption"),
                 ),
                 nav_panel(
                   "Workshop Relevance Feedback",
-                  plotOutput("workshop_relevance_feedback")
+                  plotOutput("workshop_relevance_feedback"),
+                  br(),
+                  textOutput("workshop_relevance_feedback_caption"),
                 ),
                 nav_panel(
                   "Career Stage of Workshop Registrants",
-                  plotOutput("workshop_career_stage")
+                  plotOutput("workshop_career_stage"),
+                  br(),
+                  textOutput("workshop_career_stage_caption")
                 )
               ),
               navset_card_underline(
@@ -143,11 +163,13 @@ ui <- page_navbar(
                 title = NULL,
                 nav_panel(
                   "What did You Like Most about Workshop?",
-                  plotOutput("like_most_about_workshop")
+                  plotOutput("like_most_about_workshop"),
+                  textOutput("like_most_about_workshop_caption")
                 ),
                 nav_panel(
                   "Recommendations for Improvements",
-                  plotOutput("recommendation_improvement")
+                  plotOutput("recommendation_improvement"),
+                  textOutput("recommendation_improvement_caption")
                 )
               )
             )
@@ -178,7 +200,9 @@ ui <- page_navbar(
               title = NULL,
               nav_panel(
                 "CRAN Monthly Downloads",
-                plotOutput("cran_download_stats")
+                plotOutput("cran_download_stats"),
+                br(),
+                textOutput("cran_download_stats_caption")
               )
             )),
   nav_panel("Collaborations",
@@ -188,11 +212,15 @@ ui <- page_navbar(
               title = NULL,
               nav_panel(
                 "All Collaborations",
-                plotOutput("collaboration_all")
+                plotOutput("collaboration_all"),
+                br(),
+                textOutput("collaboration_all_caption")
               ),
               nav_panel(
                 "ITCR Collaborations",
-                plotOutput("collaboration_itcr")
+                plotOutput("collaboration_itcr"),
+                br(),
+                textOutput("collaboration_itcr_caption")
               )
             )
   ),
@@ -374,9 +402,12 @@ server <- function(input, output) {
       labs(x = NULL,
            y = "Total # of Visitors",
            fill = "Target Audience",
-           title = "Visitor Distribution across Educational Resources",
-           subtitle = "'Everyone' is the primary target audience for the most visited resource, the ITN Website.") +
-      scale_fill_manual(values = cbPalette)
+           title = "Visitor Distribution across Educational Resources") +
+      scale_fill_manual(values=cbPalette)
+   })
+  # Caption
+  output$unique_visitor_website_caption <- renderText({
+    "Number of visitors for various educational resources, segmented by different target audience categories: everyone, leadership, new to data, and software developers."
   })
   
   # Engagement Stats
@@ -410,6 +441,10 @@ server <- function(input, output) {
             text = element_text(size = 17, family = "Arial"))
     
   })
+  output$engagement_stat_caption <- renderText({
+    "Comprehensive analysis of website engagement for various courses, measured by average session duration, engagement rate, event count per user, and screen page views per user, categorized by target audience groups such as everyone, leadership, new to data, and software developers."
+  })
+  
   
   # Learners by Modality
   output$learner_by_modality <- renderPlot({
@@ -430,7 +465,10 @@ server <- function(input, output) {
       ylim(c(0, 4200)) + 
       facet_wrap(~target_audience) + 
       scale_fill_manual(values=cbPalette)
-    
+  })
+  # Caption
+  output$learner_by_modality_caption <- renderText({
+    "Level of engagement in courses by modality, segmented by different target audience categories: everyone, leadership, new to data, and software developers. It contrasts the number of visitors/enrollees across website learners and total course enrollments."
   })
   
   
@@ -453,6 +491,10 @@ server <- function(input, output) {
       ylim(c(0, 1800)) + 
       scale_fill_manual(values=cbPalette)
   })
+  # Caption
+  output$learner_by_course_caption <- renderText({
+    "Total number of learners enrolled in each course, segmented by target audience categories."
+  })
   
   
   
@@ -473,6 +515,11 @@ server <- function(input, output) {
       theme(legend.position = c(0.9, 0.85),
             text = element_text(size = 17, family = "Arial"))
   })
+  # Caption
+  output$coursera_learner_caption <- renderText({
+    "Number of enrollments for various Coursera courses, delineating the popularity of courses among different target audiences, such as leadership, new to data, and software developers, with the 'Computing for Cancer Informatics' course showing the highest enrollment figures."
+  })
+  
   
   # Leanpub Learners
   output$leanpub_learner <- renderPlot({
@@ -490,6 +537,10 @@ server <- function(input, output) {
       scale_fill_manual(values = c("#56B4E9", "#009E73", "#008080")) +
       theme(legend.position = c(0.9, 0.85),
             text = element_text(size = 17, family = "Arial"))
+  })
+  # Caption
+  output$leanpub_learner_caption <- renderText({
+    "Number of Leanpub course enrollments, highlighting interest across different subjects with 'Leadership in Cancer Informatics' attracting the most learners, categorized by target audiences like leadership, those new to data, and software developers."
   })
   
   # Learners by Launch Date
@@ -511,6 +562,10 @@ server <- function(input, output) {
       scale_color_manual(values=cbPalette) + 
       ggrepel::geom_text_repel(aes(x = duration, y = webAndEnrollmentTotals, label = website), size = 6, vjust = - 1, na.rm = TRUE)
   })
+  # Caption
+  output$learner_by_launch_date_caption <- renderText({
+    "How long a course has been out (in days) is plotted on the x-axis vs the number the popularity of the course on the y-axis. We measured the popularity by considering the number of unique bookdown views together with the number of Coursera and Leanpub enrollments."
+  })
   
   # CRAN Download Stats
   output$cran_download_stats <- renderPlot({
@@ -531,6 +586,10 @@ server <- function(input, output) {
            y = "Monthly Downloads",
            color = "R Packages")
   })
+  # Caption
+  output$cran_download_stats_caption <- renderText({
+    "Monthly downloads of four R packages from CRAN ('ari', 'conrad', 'ottrpal', 'text2speech') showing fluctuations over time and notable spikes or drops that could indicate changes in usage trends or updates affecting the packages' popularity."
+  })
   
   
   # How Likely woud you be to recommend this workshop?
@@ -541,7 +600,12 @@ server <- function(input, output) {
       theme_classic() +
       theme(text = element_text(size = 17, family = "Arial")) +
       labs(title = "How likely would you be to recommend this workshop?", 
-           y = "count", x = "rating")
+           y = "count", 
+           x = "rating")
+  })
+  # Caption
+  output$recommend_workshop_caption <- renderText({ 
+    "Responses from workshop attendees on their likelihood to recommend the workshop, rated on a scale from 1 (not likely at all) to 10 (very likely). The y-axis represents the count of respondents for each rating." 
   })
   
   # Workshop Relevance Feedback
@@ -554,6 +618,10 @@ server <- function(input, output) {
       labs(title = "How likely are you to use what you learned in your daily work?",
            x = NULL)
     
+  })
+  # Caption
+  output$workshop_relevance_feedback_caption <- renderText({
+    "Feedback from workshop attendees on the relevance of the workshop content to their daily tasks and their likelihood of applying the learned material. The y-axis displays the count of respondents for each rating level."
   })
   
   output$workshop_career_stage <- renderPlot({
@@ -569,6 +637,10 @@ server <- function(input, output) {
             text = element_text(size = 17, family = "Arial")) +
       scale_fill_manual(values = c("#440154", "#28ae80"))
   })
+  # Caption
+  output$workshop_career_stage_caption <- renderText({
+    "Distribution of workshop registrants across different career stages and a distinction between trainees and non-trainees indicated by color."
+  })
   
   
   
@@ -579,6 +651,10 @@ server <- function(input, output) {
                          colors = c("#98fb98", "#83D475", "#355E3B"),
                          min.freq = 3, scale = c(3, .4))
   })
+  # Caption
+  output$like_most_about_workshop_caption <- renderText({
+    "This word cloud shows the most used terms in workshop reviews when asked 'what did you like most about the workshop?' Terms like 'interactive', 'hands-on', 'activity', and 'how' suggests workshop participants really enjoy the interactivity of the workshops."
+  })
   
   
   # Recommendations for Improvements
@@ -588,7 +664,31 @@ server <- function(input, output) {
                          colors = c("#98fb98", "#83D475", "#355E3B"),
                          min.freq = 3, scale = c(4, .4))
   })
-  
+  # Caption
+  output$recommendation_improvement_caption <- renderText({
+    "Feedback themes for a workshop, with the most significant focus on 'more', 'how', 'time', and 'example', suggesting participants are interested in detailed explanations, practical examples, and perhaps more time or more workshop offerings. "
+  })
+
+  # Collaborations - All
+  output$collaboration_all <- renderPlot({
+    collabs() %>% 
+      count(Category) %>% 
+      ggplot(aes(y = n, x = reorder(Category,-n), fill = Category)) +
+      geom_bar(position = "dodge", stat = "identity") +
+      theme_minimal() +
+      theme(axis.text.x=element_text(angle=60, hjust=1), 
+            strip.text.x = element_text(size = 6),
+            legend.position="none", 
+            text = element_text(size = 17, family = "Arial"),
+            plot.margin = unit(c(.75,.5,.5,.5), "cm")) + 
+      xlab(NULL) +
+      ylab("N") +
+      ggtitle("Collaborations with All Individuals")
+  })
+  # Caption
+  output$collaboration_all_caption <- renderText({
+    "This plot shows the large variety of collaborations and engagements with the ITN. Distribution of various academic and professional collaborations, such as manuscript authorship, course development, and networking events, showing how frequently each collaboration was completed."
+  })
   
   # Collaborations - ITCR Funded
   output$collaboration_itcr <- renderPlot({
@@ -607,24 +707,12 @@ server <- function(input, output) {
       ggtitle("Collaborations with ITCR funded individuals only")
     
   })
-  
-  # Collaborations - All
-  output$collaboration_all <- renderPlot({
-    collabs() %>% 
-      count(Category) %>% 
-      ggplot(aes(y = n, x = reorder(Category,-n), fill = Category)) +
-      geom_bar(position = "dodge", stat = "identity") +
-      theme_minimal() +
-      theme(axis.text.x=element_text(angle=60, hjust=1), 
-            strip.text.x = element_text(size = 6),
-            legend.position="none", 
-            text = element_text(size = 17, family = "Arial"),
-            plot.margin = unit(c(.75,.5,.5,.5), "cm")) + 
-      xlab(NULL) +
-      ylab("N") +
-      ggtitle("Collaborations with All Individuals")
-    
+  # Caption
+  output$collaboration_itcr_caption <- renderText({
+    "This plot also shows the number of collaborations but only collaborations that were completed with ITCR funded individuals. The number of individuals who have helped with each type of collaboration within the ITCR community. Most individuals were ITCR investigators but some were trainees or scientific staff."
   })
+  
+  
   
   # Tables --------
   
