@@ -394,9 +394,9 @@ server <- function(input, output) {
                                    y = totalUsers, 
                                    fill = target_audience)) +
       geom_bar(stat = "identity") +
-      geom_text(aes(label = totalUsers), size = 4, vjust = - 1) +
+      geom_text(aes(label = totalUsers), size = 3, vjust = - 1) +
       theme_classic() +
-      theme(axis.text.x = element_text(angle = 45, hjust=1),
+      theme(axis.text.x = element_text(angle = 60, hjust=1),
             legend.position = c(0.85, 0.85),
             text = element_text(size = 17, family = "Arial")) +
       labs(x = NULL,
@@ -405,7 +405,7 @@ server <- function(input, output) {
            title = "Visitor Distribution across Educational Resources") +
       ylim(c(0, 6000)) + 
       scale_fill_manual(values=cbPalette)
-  })
+   })
   # Caption
   output$unique_visitor_website_caption <- renderText({
     "Number of visitors for various educational resources, indicating that the ITN Website, aimed at a general audience, is the most frequented, followed by targeted resources for specific groups such as leadership and those new to data."
@@ -512,7 +512,7 @@ server <- function(input, output) {
            title = "Number of Coursera Enrollments by Course") +
       geom_text(aes(label = coursera_count), size = 4, vjust = - 1, na.rm = TRUE) +
       ylim(c(0, 1200)) + 
-      scale_fill_manual(values=cbPalette) +
+      scale_fill_manual(values = c("#56B4E9", "#009E73", "#008080")) +
       theme(legend.position = c(0.9, 0.85),
             text = element_text(size = 17, family = "Arial"))
   })
@@ -535,7 +535,7 @@ server <- function(input, output) {
            title = "Number of Leanpub Enrollments by Course") +
       geom_text(aes(label = leanpub_count), size = 4, vjust = - 1, na.rm = TRUE) +
       ylim(c(0, 40)) + 
-      scale_fill_manual(values=cbPalette) +
+      scale_fill_manual(values = c("#56B4E9", "#009E73", "#008080")) +
       theme(legend.position = c(0.9, 0.85),
             text = element_text(size = 17, family = "Arial"))
   })
