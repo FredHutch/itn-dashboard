@@ -281,7 +281,8 @@ server <- function(input, output) {
       pivot_longer(cols = contains("count"), names_to = "modality", values_to = "number_of_learners") %>%
       mutate(course_name = factor(course_name)) %>%
       separate(modality, sep = "_", into = c("modality", "meh")) %>% 
-      mutate(modality = factor(modality, levels = c("website", "leanpub", "coursera")))%>%
+      mutate(modality = factor(modality, levels = c("website", "leanpub", "coursera"),
+                               labels = c("Website", "Leanpub", "Coursera"))) %>%
       mutate(course_order = case_when(course_type == "Leadership" ~ 1,
                                       course_type == "New to data" ~ 2,
                                       course_type == "Software developers" ~ 3)) %>%
