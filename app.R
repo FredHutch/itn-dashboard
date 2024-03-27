@@ -454,7 +454,7 @@ server <- function(input, output) {
   })
   # Caption
   output$engagement_by_modality_caption <- renderText({
-    "The number of learners for each modality (website = bookdown website) for each course."
+    "The number of learners for each modality for each course."
   })
   
   # Engagement Stats
