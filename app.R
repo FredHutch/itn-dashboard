@@ -5,6 +5,7 @@ library(dplyr)
 library(tidyr)
 library(readr)
 library(lubridate)
+library(forcats)
 library(janitor)
 
 # Packages for Word Clouds
@@ -77,7 +78,13 @@ ui <- page_navbar(
                   textOutput("unique_visitor_website_caption"),
                 ),
                 nav_panel(
-                  "Engagement Stats",
+                  "Course Engagement by Modality",
+                  plotOutput("engagement_by_modality"),
+                  br(),
+                  textOutput("engagement_by_modality_caption"),
+                ),
+                nav_panel(
+                  "Course Engagement Stats",
                   plotOutput("engagement_stat"),
                   br(),
                   textOutput("engagement_stat_caption")
@@ -237,7 +244,7 @@ ui <- page_navbar(
 # Server ----
 server <- function(input, output) {
   # ITCR Slido Data
-  itcr_slido_data <- reactiveFileReader(time_interval, # this is how many milliseconds in 1 week
+  itcr_slido_data <- reactiveFileReader(time_interval,
                                         NULL,
                                         "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/itcr_slido_data.csv",
                                         readr::read_csv) 
@@ -260,6 +267,29 @@ server <- function(input, output) {
       mutate(how_likely_are_you_to_use_what_you_learned_in_your_daily_work = factor(how_likely_are_you_to_use_what_you_learned_in_your_daily_work,
                                                                                     levels = c("Not very likely", "Somewhat likely", "Likely", "Very likely", "Extremely likely")))
   })
+  
+  # Course Engagement by modality 
+  course_raw <- reactiveFileReader(time_interval,
+                                   NULL,
+                                   "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit?usp=sharing",
+                                   googlesheets4::read_sheet,
+                                   sheet = "engagement overall") 
+  
+  
+  course_processed <- reactive({
+    course_raw() %>% 
+      pivot_longer(cols = contains("count"), names_to = "modality", values_to = "number_of_learners") %>%
+      mutate(course_name = factor(course_name)) %>%
+      separate(modality, sep = "_", into = c("modality", "meh")) %>% 
+      mutate(modality = factor(modality, levels = c("website", "leanpub", "coursera"),
+                               labels = c("Website", "Leanpub", "Coursera"))) %>%
+      mutate(course_order = case_when(course_type == "Leadership" ~ 1,
+                                      course_type == "New to data" ~ 2,
+                                      course_type == "Software developers" ~ 3)) %>%
+      rename("Target Audience" =  course_type)
+  })
+  
+  
   
   
   results <- reactive({
@@ -394,7 +424,7 @@ server <- function(input, output) {
                                    y = totalUsers, 
                                    fill = target_audience)) +
       geom_bar(stat = "identity") +
-      geom_text(aes(label = totalUsers), size = 3, vjust = - 1) +
+      geom_text(aes(label = totalUsers), size = 4, vjust = - 1) +
       theme_classic() +
       theme(axis.text.x = element_text(angle = 60, hjust=1),
             legend.position = c(0.85, 0.85),
@@ -404,10 +434,28 @@ server <- function(input, output) {
            fill = "Target Audience",
            title = "Visitor Distribution across Educational Resources") +
       scale_fill_manual(values=cbPalette)
-   })
+  })
   # Caption
   output$unique_visitor_website_caption <- renderText({
     "Number of visitors for various educational resources, segmented by different target audience categories: everyone, leadership, new to data, and software developers."
+  })
+  
+  # Course Engagement By Modality
+  output$engagement_by_modality <- renderPlot({
+    course_processed()  %>% 
+      ggplot(aes(x = forcats::fct_reorder(course_name, course_order),
+                 y = number_of_learners, fill = `Target Audience`,)) +
+      geom_col() + 
+      facet_wrap(~modality, nrow = 3, scales = "free_y")  + 
+      scale_fill_manual(values=cbPalette) + 
+      theme_classic() + 
+      theme(axis.text.x = element_text(angle = 45, hjust=1),
+            text = element_text(size = 17, family = "Arial")) + 
+      labs(x = NULL, y = "Number of Learners")
+  })
+  # Caption
+  output$engagement_by_modality_caption <- renderText({
+    "The number of learners for each modality for each course."
   })
   
   # Engagement Stats
@@ -668,7 +716,7 @@ server <- function(input, output) {
   output$recommendation_improvement_caption <- renderText({
     "Feedback themes for a workshop, with the most significant focus on 'more', 'how', 'time', and 'example', suggesting participants are interested in detailed explanations, practical examples, and perhaps more time or more workshop offerings. "
   })
-
+  
   # Collaborations - All
   output$collaboration_all <- renderPlot({
     collabs() %>% 
