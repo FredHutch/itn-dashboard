@@ -501,7 +501,7 @@ server <- function(input, output) {
       geom_bar(stat = "identity", na.rm = TRUE) +
       theme_classic() +
       theme(axis.text.x = element_text(angle = 45, hjust=1),
-            legend.position = c(0.9, 0.85),
+            legend.position = "bottom",
             text = element_text(size = 17, family = "Arial")) +
       labs(x = NULL,
            y = "Visitors/Enrollees",
