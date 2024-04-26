@@ -62,79 +62,77 @@ ui <- page_navbar(
   title = "ITN Dashboard",
   fillable = TRUE,
   nav_spacer(),
-  nav_panel("Online Courses",
-            layout_column_wrap(
-              fill = TRUE,
-              width = NULL,
-              style = css(grid_template_columns = "1.2fr 1fr"),
-              navset_card_underline(
-                height = 900,
-                full_screen = TRUE,
-                title = NULL,
-                nav_panel(
-                  "Unique Visitors to Websites",
-                  plotOutput("unique_visitor_website"),
-                  br(),
-                  textOutput("unique_visitor_website_caption"),
-                ),
-                nav_panel(
-                  "Course Engagement by Modality",
-                  plotOutput("engagement_by_modality"),
-                  br(),
-                  textOutput("engagement_by_modality_caption"),
-                ),
-                nav_panel(
-                  "Course Engagement Stats",
-                  plotOutput("engagement_stat"),
-                  br(),
-                  textOutput("engagement_stat_caption")
-                ),
-                nav_panel(
-                  "Learners by Modality",
-                  plotOutput("learner_by_modality"),
-                  br(),
-                  textOutput("learner_by_modality_caption")
-                ),
-                nav_panel(
-                  "Learners by Course",
-                  plotOutput("learner_by_course"),
-                  br(),
-                  textOutput("learner_by_course_caption")
-                ),
-                nav_panel(
-                  "Coursera Learners",
-                  plotOutput("coursera_learner"),
-                  br(),
-                  textOutput("coursera_learner_caption")
-                ),
-                nav_panel(
-                  "Leanpub Learners",
-                  plotOutput("leanpub_learner"),
-                  br(),
-                  textOutput("leanpub_learner_caption")
-                ),
-                nav_panel(
-                  "Learners by Launch Date",
-                  plotOutput("learner_by_launch_date"),
-                  br(),
-                  textOutput("learner_by_launch_date_caption")
-                )
-              ),
-              navset_card_underline(
-                height = 900,
-                full_screen = TRUE,
-                title = "Tables of User Data",
-                nav_panel(
-                  "User Totals",
-                  DTOutput("user_totals")
-                ),
-                nav_panel(
-                  "User Engagement",
-                  DTOutput("user_engagement")
-                )
-              )
-            )
-            
+  nav_menu("Online Courses",
+           nav_panel("Plots",
+                     navset_card_underline(
+                       height = 900,
+                       full_screen = TRUE,
+                       title = NULL,
+                       nav_panel(
+                         "Unique Visitors to Websites",
+                         plotOutput("unique_visitor_website"),
+                         br(),
+                         textOutput("unique_visitor_website_caption"),
+                       ),
+                       nav_panel(
+                         "Course Engagement by Modality",
+                         plotOutput("engagement_by_modality"),
+                         br(),
+                         textOutput("engagement_by_modality_caption"),
+                       ),
+                       nav_panel(
+                         "Course Engagement Stats",
+                         plotOutput("engagement_stat"),
+                         br(),
+                         textOutput("engagement_stat_caption")
+                       ),
+                       nav_panel(
+                         "Learners by Modality",
+                         plotOutput("learner_by_modality"),
+                         br(),
+                         textOutput("learner_by_modality_caption")
+                       ),
+                       nav_panel(
+                         "Learners by Course",
+                         plotOutput("learner_by_course"),
+                         br(),
+                         textOutput("learner_by_course_caption")
+                       ),
+                       nav_panel(
+                         "Coursera Learners",
+                         plotOutput("coursera_learner"),
+                         br(),
+                         textOutput("coursera_learner_caption")
+                       ),
+                       nav_panel(
+                         "Leanpub Learners",
+                         plotOutput("leanpub_learner"),
+                         br(),
+                         textOutput("leanpub_learner_caption")
+                       ),
+                       nav_panel(
+                         "Learners by Launch Date",
+                         plotOutput("learner_by_launch_date"),
+                         br(),
+                         textOutput("learner_by_launch_date_caption")
+                       )
+                     )
+           ),
+           nav_panel("Tables",
+                     navset_card_underline(
+                       height = 900,
+                       full_screen = TRUE,
+                       title = "Tables of User Data",
+                       nav_panel(
+                         "User Totals",
+                         DTOutput("user_totals")
+                       ),
+                       nav_panel(
+                         "User Engagement",
+                         DTOutput("user_engagement")
+                       )
+                     )
+           )
   ),
   nav_panel("Workshops",
             layout_column_wrap(
@@ -503,7 +501,7 @@ server <- function(input, output) {
       geom_bar(stat = "identity", na.rm = TRUE) +
       theme_classic() +
       theme(axis.text.x = element_text(angle = 45, hjust=1),
-            legend.position = c(0.9, 0.85),
+            legend.position = "bottom",
             text = element_text(size = 17, family = "Arial")) +
       labs(x = NULL,
            y = "Visitors/Enrollees",
