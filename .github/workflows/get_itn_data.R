@@ -86,7 +86,7 @@ readr::write_csv(itcr_slido_data, file.path(root_dir,"data", "itcr_slido_data.cs
 # cran_download_stats.csv ----
 
 # CRAN Download Stats
-download_stats <- cranlogs::cran_downloads(packages = c("ottrpal", "conrad", "ari", "text2speech"), 
+download_stats <- cranlogs::cran_downloads(packages = c("ottrpal", "conrad", "ari", "text2speech", "metricminer"), 
                                            # first version of ari published on 2017-08-31 
                                            from = "2017-08-31",
                                            to = "last-day") 
