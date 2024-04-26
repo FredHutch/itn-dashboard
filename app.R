@@ -636,7 +636,7 @@ server <- function(input, output) {
   })
   # Caption
   output$cran_download_stats_caption <- renderText({
-    "Monthly downloads of four R packages from CRAN ('ari', 'conrad', 'ottrpal', 'text2speech') showing fluctuations over time and notable spikes or drops that could indicate changes in usage trends or updates affecting the packages' popularity."
+    "Monthly downloads of four R packages from CRAN ('ari', 'conrad', 'ottrpal', 'text2speech', 'metricminer') showing fluctuations over time and notable spikes or drops that could indicate changes in usage trends or updates affecting the packages' popularity."
   })
   
   
