@@ -26,7 +26,7 @@ viridis_cc <- c("#440154", "#2c728e", "#28ae80", "#addc30")
 # Wordcloud 
 ud_model <- udpipe::udpipe_load_model("wordcloud-model.udpipe")
 
-# Time interval (ms)
+# Time interval
 time_interval <- 604800000
 
 # Links
@@ -50,30 +50,17 @@ link_help <- tags$a(
 ui <- dashboardPage(
   # Dashboard Header ----------------------------------------------------
   dashboardHeader(
-    title = "ITN Dashboard",
-    # TODO: Dropdown menu for notification (Last Data Uploaded: )
-    dropdownMenu(type = "notifications", badgeStatus = "warning",
-                 notificationItem(icon = icon("users"), status = "info",
-                                  "5 new members joined today"
-                 ),
-                 notificationItem(icon = icon("warning"), status = "danger",
-                                  "Resource usage near limit."
-                 ),
-                 notificationItem(icon = icon("shopping-cart", lib = "glyphicon"),
-                                  status = "success", "25 sales made"
-                 ),
-                 notificationItem(icon = icon("user", lib = "glyphicon"),
-                                  status = "danger", "You changed your username"
-                 )
-    )
+    title = "ITN Dashboard"
   ),
   # Dashboard Sidebar ----------------------------------------------------
   dashboardSidebar(
     sidebarMenu(
-      menuItem("Courses", tabName = "tab_courses", icon = icon("chalkboard")),
+      menuItem("Courses", tabName = "tab_courses", icon = icon("chalkboard"),
+               menuSubItem("Plots", tabName = "tab_courses_plots"),
+               menuSubItem("Tables", tabName = "tab_courses_tables")),
       menuItem("Workshops", tabName = "tab_workshops", icon = icon("people-group")),
       menuItem("Software Usage", tabName = "tab_software_usage", icon = icon("robot")),
-      menuItem("Collaborations", tabName = "tab_collaborations", icon = icon("people-arrows")),
+      menuItem("Collaborations", tabName = "tab_collabs", icon = icon("people-arrows")),
       menuItem("About", tabName = "tab_about", icon = icon("info"))
     )
   ),
@@ -86,7 +73,7 @@ ui <- dashboardPage(
     
     tabItems(
       # Courses Tab ----------------------------------------------------
-      tabItem(tabName = "tab_courses",
+      tabItem(tabName = "tab_courses_plots",
               # First row
               fluidRow(
                 box(title = "Visitors across Educational Resources",
@@ -129,6 +116,19 @@ ui <- dashboardPage(
                     plotOutput("plot_learner_launch_date"))
               )
       ),
+      # Tables Tab ----------------------------------------------------
+      tabItem(tabName = "tab_courses_tables",
+                tabBox(side = "left",
+                       height = "400px",
+                       tabPanel("User Totals",
+                                DTOutput("table_user_total")),
+                       tabPanel("User Engagement", 
+                                DTOutput("table_user_engagement")),
+                       width = 12
+                )
+              
+      ),
+      
       # Workshops Tab ----------------------------------------------------
       tabItem(tabName = "tab_workshops",
               # First Row
@@ -163,7 +163,22 @@ ui <- dashboardPage(
                     width = 12,
                     plotOutput("plot_monthly_cran_download"))
               )
+      ),
+      # Collaborations Tab ----------------------------------------------------
+      tabItem(tabName = "tab_collabs",
+              # First Row
+              fluidRow(
+                box(title = "All Collaborations",
+                    plotOutput("plot_collaboration_all")),
+                box(title = "ITCR-Only Collaborations",
+                    plotOutput("plot_collaboration_itcr"))
+              )
+      ),
+      # About Tab ----------------------------------------------------
+      tabItem(tabName = "tab_about",
+              "UNDER CONSTRUCTION"
       )
+      
     )
   )
 )
@@ -205,6 +220,29 @@ server <- function(input, output) {
         TRUE ~ modality
       ))
   })
+  
+  # Data: ITCR Google Analytics ----------------------------------------------------
+  ga_metrics <-  reactiveFileReader(time_interval, 
+                                    NULL,
+                                    "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/itcr_ga_metric_data.csv",
+                                    readr::read_csv)
+  
+  user_totals <- reactive({
+    ga_metrics() %>% 
+      clean_names() %>% 
+      select(website, active_users, average_session_duration) %>% 
+      mutate(average_session_duration = round(average_session_duration, digits = 0))
+  })
+  
+  user_engagement <- reactive({
+    ga_metrics() %>% 
+      clean_names() %>% 
+      select(website, screen_page_views_per_user, 
+             sessions, screen_page_views, engagement_rate) %>% 
+      mutate(screen_page_views_per_user = round(screen_page_views_per_user, 0),
+             engagement_rate = round(engagement_rate, 2))
+  })
+  
   
   # Data: Course Engagement by Modality ----------------------------------------------------
   course_raw <- reactiveFileReader(time_interval,
@@ -297,6 +335,51 @@ server <- function(input, output) {
                                        NULL,
                                        "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/cran_download_stats.csv",
                                        readr::read_csv)
+  
+  # Data: Collaborations ----------------------------------------------------
+  collabs_raw <-  reactiveFileReader(time_interval, 
+                                     NULL,
+                                     "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit?usp=sharing",
+                                     googlesheets4::read_sheet)
+  
+  collabs_processed <- reactive({
+    collabs_raw() %>% 
+      separate_rows("Category", sep = ", ", ) %>% 
+      mutate(Category = trimws(Category)) %>% 
+      filter(Category != "?")
+  })
+  
+  # Table: User Totals ----------------------------------------------------
+  output$table_user_total <- renderDT({
+    DT::datatable(
+      user_totals(), 
+      colnames = c("Website", "Active Users", "Avg Session Duration"),
+      options = list(lengthChange = FALSE, # remove "Show X entries"
+                     searching = FALSE,
+                     scrollY = "450px"), # remove Search box
+      # For the table to grow/shrink
+      fillContainer = TRUE,
+      escape = FALSE
+    )
+  })
+  
+  # Table: User Engagement ----------------------------------------------------
+  output$table_user_engagement <- renderDT({
+    DT::datatable(
+      user_engagement(), 
+      colnames = c("Website", "Screen Page Views per User", "Sessions",
+                   "Screen Page Views", "Engagement Rate"),
+      options = list(lengthChange = FALSE, # remove "Show X entries"
+                     searching = FALSE,
+                     scrollY = "450px"), # remove Search box
+      # For the table to grow/shrink
+      fillContainer = TRUE,
+      escape = FALSE
+    )
+  })
+  
+  
+  
   
   # Plot: Visitors to Websites of Educational Resources ----------------------------------------------------
   output$plot_visitor_website <- renderPlot({
@@ -558,6 +641,39 @@ server <- function(input, output) {
            color = "R Packages")
   })
   
+  # Plot: All Collaborations ----------------------------------------------------
+  output$plot_collaboration_all <- renderPlot({
+    collabs_processed() %>% 
+      count(Category) %>% 
+      ggplot(aes(y = n, x = reorder(Category,-n), fill = Category)) +
+      geom_bar(position = "dodge", stat = "identity") +
+      coord_flip() +
+      theme_minimal() +
+      theme(axis.text.x=element_text(angle=60, hjust=1), 
+            strip.text.x = element_text(size = 6),
+            legend.position="none", 
+            text = element_text(size = 17, family = "Arial"),
+            plot.margin = unit(c(.75,.5,.5,.5), "cm")) + 
+      xlab(NULL) +
+      ylab(NULL)
+  })
+  
+  # Plot: ITCR Collaborations ----------------------------------------------------
+  output$plot_collaboration_itcr <- renderPlot({
+    collabs_processed() %>% 
+      filter(ITN_ITCR_or_external == "ITCR") %>%
+      count(Category) %>%
+      ggplot(aes(y =n, x=reorder(Category, -n), fill = Category )) +
+      geom_bar(position="dodge", stat = "identity") +
+      coord_flip() +
+      theme_minimal() +
+      theme(axis.text.x=element_text(angle=60, hjust=1), strip.text.x = element_text(size=6),
+            text = element_text(size = 17, family = "Arial"),
+            legend.position = "none",
+            plot.margin = unit(c(.75,.5,.5,.5), "cm")) +
+      xlab(NULL) +
+      ylab(NULL) 
+  })
   
   
 }
