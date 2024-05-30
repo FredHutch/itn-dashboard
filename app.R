@@ -29,6 +29,7 @@ ud_model <- udpipe::udpipe_load_model("wordcloud-model.udpipe")
 # Time interval
 time_interval <- 604800000
 
+# Links
 link_itn <- tags$a(
   shiny::icon("house"), "ITN",
   href = "https://www.itcrtraining.org/home",
