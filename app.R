@@ -26,7 +26,7 @@ viridis_cc <- c("#440154", "#2c728e", "#28ae80", "#addc30")
 # Wordcloud 
 ud_model <- udpipe::udpipe_load_model("wordcloud-model.udpipe")
 
-# Time interval
+# Time interval (ms)
 time_interval <- 604800000
 
 # Links
