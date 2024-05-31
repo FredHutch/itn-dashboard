@@ -156,7 +156,14 @@ ui <- dashboardPage(
       # Software Usage Tab ----------------------------------------------------
       tabItem(tabName = "tab_software_usage",
               # First Row
-              fluidRow(),
+              fluidRow(
+                infoBox("Loqui",
+                        "A Shiny app for Creating Automated Videos",
+                        href = "https://loqui.fredhutch.org/", 
+                        icon = icon("video")),
+                infoBox("Number of Loqui Users", 20, icon = icon("user-group")),
+                infoBox("Number of Videos made with Loqui", 490, icon = icon("play"))
+              ),
               # Second Row
               fluidRow(
                 box(title = "Monthly CRAN Downloads",
