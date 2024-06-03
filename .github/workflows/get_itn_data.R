@@ -26,22 +26,27 @@ auth_from_secret("github", token = Sys.getenv("METRICMINER_GITHUB_PAT"))
 ga_accounts <- get_ga_user()
 
 fhdsl_account_id <- ga_accounts %>%
-  dplyr::filter(name == "fhDaSL") %>%
-  dplyr::pull(id)
+  filter(name == "fhDaSL") %>%
+  pull(id)
 
 itcr_account_id <- ga_accounts %>%
-  dplyr::filter(name == "itcrtraining") %>%
-  dplyr::pull(id)
+  filter(name == "itcrtraining") %>%
+  pull(id)
 
-fhdsl_stats_list <- get_multiple_ga_metrics(account_id = fhdsl_account_id)
-itcr_stats_list <- get_multiple_ga_metrics(account_id = itcr_account_id)
+fhdsl_stats_raw <- get_multiple_ga_metrics(account_id = fhdsl_account_id)
+fhdsl_stats <- fhdsl_stats_raw$metrics
 
-# There's some google analytics that aren't ITCR courses
-not_itcr <- c("hutchdatasci", "whoiswho", "MMDS", "FH Cluster 101", "AnVIL_Researcher_Journey")
+itcr_stats_raw <- get_multiple_ga_metrics(account_id = itcr_account_id)
+itcr_stats <- itcr_stats_raw$metrics
 
-# itcr_ga_metric_data.csv ----
-itcr_ga_metric_data <- dplyr::bind_rows(fhdsl_stats_list$metrics ,itcr_stats_list$metrics) %>%
-  dplyr::filter(!(website %in%not_itcr))
+# Filter out Google Analytics that aren't ITCR courses
+not_itcr <- c("hutchdatasci", "whoiswho", "MMDS", "FH Cluster 101", "DaSL Collection",  "proof",
+              "Developing_WDL_Workflows", "ITN Website", "OTTR website", "metricminer.org", "widget")
+
+# itcr_ga_metric_data.csv ----------------------------------------------------
+itcr_ga_metric_data <- fhdsl_stats %>%
+  bind_rows(itcr_stats) %>%
+  filter(!(website %in%not_itcr))
 
 # Save as CSV
 readr::write_csv(itcr_ga_metric_data, file.path(root_dir,"data", "itcr_ga_metric_data.csv"))
@@ -50,11 +55,12 @@ readr::write_csv(itcr_ga_metric_data, file.path(root_dir,"data", "itcr_ga_metric
 
 
 
-# itcr_course_metrics.csv ----
+# itcr_course_metrics.csv ----------------------------------------------------
+# TODO: Where did the website_count column come from?
 manual_course_info <- googlesheets4::read_sheet(
   "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit#gid=1550012125", sheet = "Course_data",
   col_types = "ccDDDciii") %>%
-  dplyr::mutate_if(is.numeric.Date, lubridate::ymd)
+  mutate_if(is.numeric.Date, lubridate::ymd)
 
 # Join this all together
 itcr_course_metrics <- itcr_ga_metric_data %>%
@@ -69,7 +75,7 @@ readr::write_csv(itcr_course_metrics, file.path(root_dir,"data", "itcr_course_me
 
 
 
-# itcr_slido_data.csv ----
+# itcr_slido_data.csv ----------------------------------------------------
 
 # ITCR Google Drive
 itcr_drive_id <- "https://drive.google.com/drive/folders/0AJb5Zemj0AAkUk9PVA"
@@ -80,10 +86,7 @@ itcr_slido_data <- itcr_slido_data_raw$`Polls-per-user`
 readr::write_csv(itcr_slido_data, file.path(root_dir,"data", "itcr_slido_data.csv"))
 
 
-
-
-
-# cran_download_stats.csv ----
+# cran_download_stats.csv ----------------------------------------------------
 
 # CRAN Download Stats
 download_stats <- cranlogs::cran_downloads(packages = c("ottrpal", "conrad", "ari", "text2speech"), 
@@ -91,7 +94,7 @@ download_stats <- cranlogs::cran_downloads(packages = c("ottrpal", "conrad", "ar
                                            from = "2017-08-31",
                                            to = "last-day") 
 # Saved as `download_stats.csv`
-download_stats_to_plot <- download_stats %>% 
+download_stats_processed <- download_stats %>% 
   separate(date, into=c("year", "month name", "day"), sep = "-") %>% 
   unite("Month", c("year", "month name"), sep='-', remove=TRUE) %>%  
   # cran_downloads returns the daily downloads,
@@ -104,6 +107,6 @@ download_stats_to_plot <- download_stats %>%
   ungroup()
 
 # Save this to a TSV
-readr::write_csv(download_stats_to_plot, file.path(root_dir,"data", "cran_download_stats.csv"))
+readr::write_csv(download_stats_processed, file.path(root_dir,"data", "cran_download_stats.csv"))
 
 sessionInfo()

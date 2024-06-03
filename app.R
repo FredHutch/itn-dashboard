@@ -1,28 +1,19 @@
+# Packages ----------------------------------------------------
 library(shiny)
+library(shinydashboard)
 
-# Packages for Data Manipulation
-library(dplyr)
-library(tidyr)
-library(readr)
-library(lubridate)
-library(forcats)
+library(tidyverse)
 library(janitor)
 
-# Packages for Word Clouds
 library(udpipe)
 library(wordcloud)
-
-# Packages for Bootstrap
-library(bslib)
 library(bsicons)
 library(htmltools)
-library(ggplot2)
+
 library(fontawesome)
 library(DT)
 
-# Misc
 library(googlesheets4)
-# Suspend authorization
 gs4_deauth()
 
 # Everyone, Leadership, new to data science, software developers
@@ -35,8 +26,10 @@ viridis_cc <- c("#440154", "#2c728e", "#28ae80", "#addc30")
 # Wordcloud 
 ud_model <- udpipe::udpipe_load_model("wordcloud-model.udpipe")
 
+# Time interval
 time_interval <- 604800000
 
+# Links
 link_itn <- tags$a(
   shiny::icon("house"), "ITN",
   href = "https://www.itcrtraining.org/home",
@@ -53,260 +46,153 @@ link_help <- tags$a(
   target = "_blank"
 )
 
-# UI ----
-ui <- page_navbar(
-  # Favicon
-  header = tags$head(tags$link(rel="shortcut icon", href="i/img/favicon.ico")),
-  # Hard-code version of bootstrap used
-  theme = bs_theme(version = 5),
-  title = "ITN Dashboard",
-  fillable = TRUE,
-  nav_spacer(),
-  nav_menu("Online Courses",
-           nav_panel("Plots",
-                     navset_card_underline(
-                       height = 900,
-                       full_screen = TRUE,
-                       title = NULL,
-                       nav_panel(
-                         "Unique Visitors to Websites",
-                         plotOutput("unique_visitor_website"),
-                         br(),
-                         textOutput("unique_visitor_website_caption"),
-                       ),
-                       nav_panel(
-                         "Course Engagement by Modality",
-                         plotOutput("engagement_by_modality"),
-                         br(),
-                         textOutput("engagement_by_modality_caption"),
-                       ),
-                       nav_panel(
-                         "Course Engagement Stats",
-                         plotOutput("engagement_stat"),
-                         br(),
-                         textOutput("engagement_stat_caption")
-                       ),
-                       nav_panel(
-                         "Learners by Modality",
-                         plotOutput("learner_by_modality"),
-                         br(),
-                         textOutput("learner_by_modality_caption")
-                       ),
-                       nav_panel(
-                         "Learners by Course",
-                         plotOutput("learner_by_course"),
-                         br(),
-                         textOutput("learner_by_course_caption")
-                       ),
-                       nav_panel(
-                         "Coursera Learners",
-                         plotOutput("coursera_learner"),
-                         br(),
-                         textOutput("coursera_learner_caption")
-                       ),
-                       nav_panel(
-                         "Leanpub Learners",
-                         plotOutput("leanpub_learner"),
-                         br(),
-                         textOutput("leanpub_learner_caption")
-                       ),
-                       nav_panel(
-                         "Learners by Launch Date",
-                         plotOutput("learner_by_launch_date"),
-                         br(),
-                         textOutput("learner_by_launch_date_caption")
-                       )
-                     )
-           ),
-           nav_panel("Tables",
-                     navset_card_underline(
-                       height = 900,
-                       full_screen = TRUE,
-                       title = "Tables of User Data",
-                       nav_panel(
-                         "User Totals",
-                         DTOutput("user_totals")
-                       ),
-                       nav_panel(
-                         "User Engagement",
-                         DTOutput("user_engagement")
-                       )
-                     )
-           )
+
+ui <- dashboardPage(
+  # Dashboard Header ----------------------------------------------------
+  dashboardHeader(
+    title = "ITN Dashboard"
   ),
-  nav_panel("Workshops",
-            layout_column_wrap(
-              fill = TRUE,
-              width = NULL,
-              style = css(grid_template_columns = "1.2fr 1fr"),
-              navset_card_underline(
-                height = 900,
-                full_screen = TRUE,
-                title = NULL,
-                nav_panel(
-                  "Recommend this Workshop?",
-                  plotOutput("recommend_workshop"),
-                  br(),
-                  textOutput("recommend_workshop_caption"),
-                ),
-                nav_panel(
-                  "Workshop Relevance Feedback",
-                  plotOutput("workshop_relevance_feedback"),
-                  br(),
-                  textOutput("workshop_relevance_feedback_caption"),
-                ),
-                nav_panel(
-                  "Career Stage of Workshop Registrants",
-                  plotOutput("workshop_career_stage"),
-                  br(),
-                  textOutput("workshop_career_stage_caption")
+  # Dashboard Sidebar ----------------------------------------------------
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Courses", tabName = "tab_courses", icon = icon("chalkboard"),
+               menuSubItem("Plots", tabName = "tab_courses_plots"),
+               menuSubItem("Tables", tabName = "tab_courses_tables")),
+      menuItem("Workshops", tabName = "tab_workshops", icon = icon("people-group")),
+      menuItem("Software Usage", tabName = "tab_software_usage", icon = icon("robot")),
+      menuItem("Collaborations", tabName = "tab_collabs", icon = icon("people-arrows")),
+      menuItem("About", tabName = "tab_about", icon = icon("info"))
+    )
+  ),
+  # Dashboard Body ----------------------------------------------------
+  dashboardBody(
+    # Custom style
+    includeCSS("www/style.css"),
+    # Favicon
+    tags$head(tags$link(rel="shortcut icon", href="i/img/favicon.ico")),
+    
+    tabItems(
+      # Courses Tab ----------------------------------------------------
+      tabItem(tabName = "tab_courses_plots",
+              # First row
+              fluidRow(
+                box(title = "Visitors across Educational Resources",
+                    plotOutput("plot_visitor_website")),
+                
+                box(title = "Engagement by Modality",
+                    selectInput("modality", "Modality:",
+                                c("Website" = "website", 
+                                  "Leanpub" = "leanpub",
+                                  "Coursera" = "coursera")),
+                    plotOutput("plot_engagement_modality"))
+              ),
+              # Second row
+              fluidRow(
+                box(title = "Website Engagement",
+                    selectInput("metric", "Metric:",
+                                c("Screen Page Views per User" = "screen_page_views_per_user", 
+                                  "Average Session Duration" = "average_session_duration",
+                                  "Event Count per User" = "event_count_per_user",
+                                  "Engagement Rate" = "engagement_rate")),
+                    plotOutput("plot_engagement_website")),
+                
+                box(title = "Course Engagement by Target Audience",
+                    plotOutput("plot_engagement_target"))
+              ),
+              # Third row
+              fluidRow(
+                box(title = "Learners by Course",
+                    plotOutput("plot_learner_course")),
+                
+                box(title = "Coursera Learners",
+                    plotOutput("plot_coursera"))
+              ),
+              # Fourth row
+              fluidRow(
+                box(title = "Leanpub Learners",
+                    plotOutput("plot_leanpub")),
+                
+                box(title = "Learners by Launch Date",
+                    plotOutput("plot_learner_launch_date"))
+              )
+      ),
+      # Tables Tab ----------------------------------------------------
+      tabItem(tabName = "tab_courses_tables",
+                tabBox(side = "left",
+                       height = "400px",
+                       tabPanel("User Totals",
+                                DTOutput("table_user_total")),
+                       tabPanel("User Engagement", 
+                                DTOutput("table_user_engagement")),
+                       width = 12
                 )
+              
+      ),
+      
+      # Workshops Tab ----------------------------------------------------
+      tabItem(tabName = "tab_workshops",
+              # First Row
+              fluidRow(
+                box(title = "Workshop Recommendation",
+                    plotOutput("plot_workshop_recommendation")),
+                
+                box(title = "Workshop Relevance",
+                    plotOutput("plot_workshop_relevance"))
               ),
-              navset_card_underline(
-                height = 900,
-                full_screen = TRUE,
-                title = NULL,
-                nav_panel(
-                  "What did You Like Most about Workshop?",
-                  plotOutput("like_most_about_workshop"),
-                  textOutput("like_most_about_workshop_caption")
-                ),
-                nav_panel(
-                  "Recommendations for Improvements",
-                  plotOutput("recommendation_improvement"),
-                  textOutput("recommendation_improvement_caption")
-                )
-              )
-            )
-  ),
-  nav_panel("Software Usage",
-            layout_column_wrap(
-              width = "250px",
-              fill = TRUE,
-              value_box(
-                title = "Loqui: A Shiny app for Creating Automated Videos",
-                value = NULL,
-                a("https://loqui.fredhutch.org/", href = "https://loqui.fredhutch.org/", target = "_blank")
+              # Second Row
+              fluidRow(
+                box(title = "Workshop Registrant Career Stage",
+                    width = 12,
+                    plotOutput("plot_workshop_career_stage"))
               ),
-              value_box(
-                title = "Unique Number of Loqui Users",
-                value = "18",
-                showcase = bsicons::bs_icon("people-fill")
+              # Third Row
+              fluidRow(
+                box(title = "Workshop Review: What Did You Like Most?",
+                    plotOutput("plot_workshop_review")),
+                box(title = "Workshop Recommendations for Improvement",
+                    plotOutput("plot_workshop_improvement"))
+              )
+      ),
+      # Software Usage Tab ----------------------------------------------------
+      tabItem(tabName = "tab_software_usage",
+              # First Row
+              fluidRow(
+                infoBox("Loqui",
+                        "A Shiny app for Creating Automated Videos",
+                        href = "https://loqui.fredhutch.org/", 
+                        icon = icon("video")),
+                infoBox("Number of Loqui Users", 20, icon = icon("user-group")),
+                infoBox("Number of Videos made with Loqui", 490, icon = icon("play"))
               ),
-              value_box(
-                title = "Number of Videos made with Loqui",
-                value = "486",
-                showcase = bsicons::bs_icon("camera-video-fill")
+              # Second Row
+              fluidRow(
+                box(title = "Monthly CRAN Downloads",
+                    width = 12,
+                    plotOutput("plot_monthly_cran_download"))
               )
-            ),
-            navset_card_underline(
-              height = 900,
-              full_screen = TRUE,
-              title = NULL,
-              nav_panel(
-                "CRAN Monthly Downloads",
-                plotOutput("cran_download_stats"),
-                br(),
-                textOutput("cran_download_stats_caption")
+      ),
+      # Collaborations Tab ----------------------------------------------------
+      tabItem(tabName = "tab_collabs",
+              # First Row
+              fluidRow(
+                box(title = "All Collaborations",
+                    plotOutput("plot_collaboration_all")),
+                box(title = "ITCR-Only Collaborations",
+                    plotOutput("plot_collaboration_itcr"))
               )
-            )),
-  nav_panel("Collaborations",
-            navset_card_underline(
-              height = 900,
-              full_screen = TRUE,
-              title = NULL,
-              nav_panel(
-                "All Collaborations",
-                plotOutput("collaboration_all"),
-                br(),
-                textOutput("collaboration_all_caption")
-              ),
-              nav_panel(
-                "ITCR Collaborations",
-                plotOutput("collaboration_itcr"),
-                br(),
-                textOutput("collaboration_itcr_caption")
-              )
-            )
-  ),
-  nav_menu(
-    title = "Links",
-    align = "right",
-    nav_item(link_itn),
-    nav_item(link_code),
-    nav_item(link_help)
+      ),
+      # About Tab ----------------------------------------------------
+      tabItem(tabName = "tab_about",
+              "UNDER CONSTRUCTION"
+      )
+      
+    )
   )
 )
 
-
-# Server ----
+# Server ----------------------------------------------------
 server <- function(input, output) {
-  # ITCR Slido Data
-  itcr_slido_data <- reactiveFileReader(time_interval,
-                                        NULL,
-                                        "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/itcr_slido_data.csv",
-                                        readr::read_csv) 
-  
-  # Workshops Data
-  poll_data <- reactive({
-    itcr_slido_data() %>%
-      janitor::clean_names() %>% 
-      mutate(merged_likely_rec = if_else(is.na(how_likely_would_you_be_to_recommend_this_workshop), how_likely_would_you_be_to_recommend_this_workshop_2, 
-                                         how_likely_would_you_be_to_recommend_this_workshop))
-  })
-  
-  poll_data_subset <- reactive({
-    poll_data() %>%
-      dplyr::filter(how_likely_are_you_to_use_what_you_learned_in_your_daily_work %in% c("Extremely likely", 
-                                                                                         "Likely",
-                                                                                         "Not very likely", 
-                                                                                         "Somewhat likely", 
-                                                                                         "Very likely")) %>% 
-      mutate(how_likely_are_you_to_use_what_you_learned_in_your_daily_work = factor(how_likely_are_you_to_use_what_you_learned_in_your_daily_work,
-                                                                                    levels = c("Not very likely", "Somewhat likely", "Likely", "Very likely", "Extremely likely")))
-  })
-  
-  # Course Engagement by modality 
-  course_raw <- reactiveFileReader(time_interval,
-                                   NULL,
-                                   "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit?usp=sharing",
-                                   googlesheets4::read_sheet,
-                                   sheet = "engagement overall") 
-  
-  
-  course_processed <- reactive({
-    course_raw() %>% 
-      pivot_longer(cols = contains("count"), names_to = "modality", values_to = "number_of_learners") %>%
-      mutate(course_name = factor(course_name)) %>%
-      separate(modality, sep = "_", into = c("modality", "meh")) %>% 
-      mutate(modality = factor(modality, levels = c("website", "leanpub", "coursera"),
-                               labels = c("Website", "Leanpub", "Coursera"))) %>%
-      mutate(course_order = case_when(course_type == "Leadership" ~ 1,
-                                      course_type == "New to data" ~ 2,
-                                      course_type == "Software developers" ~ 3)) %>%
-      rename("Target Audience" =  course_type)
-  })
-  
-  
-  
-  
-  results <- reactive({
-    udpipe::udpipe_annotate(ud_model, x = poll_data()$what_did_you_like_most_about_the_workshop) %>%
-      as.data.frame() %>%
-      dplyr::filter(upos %in% c("NOUN", "ADJ", "ADV")) %>%
-      mutate(lemma= tolower(lemma)) %>%
-      count(lemma)
-  })
-  
-  rec_results <- reactive({
-    udpipe::udpipe_annotate(ud_model, x = poll_data()$please_share_any_recommendations_you_have_for_improvements) %>%
-      as.data.frame() %>%
-      filter(upos %in% c("NOUN", "ADJ", "ADV")) %>%
-      mutate(lemma= tolower(lemma)) %>%
-      count(lemma)
-  }) 
-  
-  # ITCR Course data ----
+  # Data: ITCR Course ----------------------------------------------------
   itcr_course_data_raw <- reactiveFileReader(time_interval, 
                                              NULL,
                                              "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/itcr_course_metrics.csv",
@@ -342,15 +228,7 @@ server <- function(input, output) {
       ))
   })
   
-  
-  # CRAN Downloads ----
-  cran_download_stats <-  reactiveFileReader(time_interval, 
-                                             NULL,
-                                             "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/cran_download_stats.csv",
-                                             readr::read_csv)
-  
-  
-  # ITCR GA Metrics ----
+  # Data: ITCR Google Analytics ----------------------------------------------------
   ga_metrics <-  reactiveFileReader(time_interval, 
                                     NULL,
                                     "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/itcr_ga_metric_data.csv",
@@ -358,14 +236,14 @@ server <- function(input, output) {
   
   user_totals <- reactive({
     ga_metrics() %>% 
-      janitor::clean_names() %>% 
+      clean_names() %>% 
       select(website, active_users, average_session_duration) %>% 
       mutate(average_session_duration = round(average_session_duration, digits = 0))
   })
   
   user_engagement <- reactive({
     ga_metrics() %>% 
-      janitor::clean_names() %>% 
+      clean_names() %>% 
       select(website, screen_page_views_per_user, 
              sessions, screen_page_views, engagement_rate) %>% 
       mutate(screen_page_views_per_user = round(screen_page_views_per_user, 0),
@@ -373,20 +251,36 @@ server <- function(input, output) {
   })
   
   
-  # Collabs ----
-  collabs_raw <-  reactiveFileReader(time_interval, 
-                                     NULL,
-                                     "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit?usp=sharing",
-                                     googlesheets4::read_sheet)
+  # Data: Course Engagement by Modality ----------------------------------------------------
+  course_raw <- reactiveFileReader(time_interval,
+                                   NULL,
+                                   "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit?usp=sharing",
+                                   googlesheets4::read_sheet,
+                                   sheet = "engagement overall") 
   
-  collabs <- reactive({
-    collabs_raw() %>% 
-      separate_rows("Category", sep = ", ", ) %>% 
-      mutate(Category = trimws(Category)) %>% 
-      filter(Category != "?")
+  
+  course_processed <- reactive({
+    course_raw() %>% 
+      pivot_longer(cols = contains("count"), names_to = "modality", values_to = "number_of_learners") %>%
+      mutate(course_name = factor(course_name)) %>%
+      separate(modality, sep = "_", into = c("modality", "meh")) %>% 
+      mutate(modality = factor(modality, levels = c("website", "leanpub", "coursera"),
+                               labels = c("website", "leanpub", "coursera"))) %>%
+      mutate(course_order = case_when(course_type == "Leadership" ~ 1,
+                                      course_type == "New to data" ~ 2,
+                                      course_type == "Software developers" ~ 3)) %>%
+      rename("Target Audience" =  course_type) %>%
+      filter(modality == input$modality)
+    
   })
   
-  # Career Stage ----
+  # Data: ITCR Slido ----------------------------------------------------
+  itcr_slido_data <- reactiveFileReader(time_interval,
+                                        NULL,
+                                        "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/itcr_slido_data.csv",
+                                        readr::read_csv) 
+  
+  # Data: Workshop Registrant Career Stage ----------------------------------------------------
   career_stage_counts_raw <- reactiveFileReader(time_interval, 
                                                 NULL,
                                                 "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit?usp=sharing",
@@ -408,76 +302,148 @@ server <- function(input, output) {
       stringsAsFactors = FALSE
     )
     
-    career_stage_processed$Trainee <- ifelse(career_stage_processed$Stage %in% c("Phd student", "postdoc", "Master's student", "Research tech", "undergrad"), "yes",
+    career_stage_processed$Trainee <- ifelse(career_stage_processed$Stage %in% c("Phd student", 
+                                                                                 "postdoc",
+                                                                                 "Master's student",
+                                                                                 "Research tech",
+                                                                                 "undergrad"), 
+                                             "yes",
                                              "no")
-    
     career_stage_processed
   })
   
-  # Plots --------
+  # Data: Poll Results ---------------------------------------------------
+  poll_data <- reactive({
+    itcr_slido_data() %>%
+      clean_names() %>% 
+      mutate(merged_likely_rec = if_else(is.na(how_likely_would_you_be_to_recommend_this_workshop), how_likely_would_you_be_to_recommend_this_workshop_2, 
+                                         how_likely_would_you_be_to_recommend_this_workshop))
+  })
   
-  # Unique Visitors to Websites
-  output$unique_visitor_website <- renderPlot({
-    ggplot(itcr_course_data(), aes(x = reorder(website, -totalUsers), 
-                                   y = totalUsers, 
-                                   fill = target_audience)) +
+  
+  poll_results <- reactive({
+    udpipe::udpipe_annotate(ud_model, x = poll_data()$what_did_you_like_most_about_the_workshop) %>%
+      as.data.frame() %>%
+      dplyr::filter(upos %in% c("NOUN", "ADJ", "ADV")) %>%
+      mutate(lemma= tolower(lemma)) %>%
+      count(lemma)
+  })
+  
+  poll_rec_results <- reactive({
+    udpipe::udpipe_annotate(ud_model, x = poll_data()$please_share_any_recommendations_you_have_for_improvements) %>%
+      as.data.frame() %>%
+      filter(upos %in% c("NOUN", "ADJ", "ADV")) %>%
+      mutate(lemma= tolower(lemma)) %>%
+      count(lemma)
+  }) 
+  
+  # Data: CRAN Downloads ----------------------------------------------------
+  cran_download <-  reactiveFileReader(time_interval, 
+                                       NULL,
+                                       "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/cran_download_stats.csv",
+                                       readr::read_csv)
+  
+  # Data: Collaborations ----------------------------------------------------
+  collabs_raw <-  reactiveFileReader(time_interval, 
+                                     NULL,
+                                     "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit?usp=sharing",
+                                     googlesheets4::read_sheet)
+  
+  collabs_processed <- reactive({
+    collabs_raw() %>% 
+      separate_rows("Category", sep = ", ", ) %>% 
+      mutate(Category = trimws(Category)) %>% 
+      filter(Category != "?")
+  })
+  
+  # Table: User Totals ----------------------------------------------------
+  output$table_user_total <- renderDT({
+    DT::datatable(
+      user_totals(), 
+      colnames = c("Website", "Active Users", "Avg Session Duration"),
+      options = list(lengthChange = FALSE, # remove "Show X entries"
+                     searching = FALSE,
+                     scrollY = "450px"), # remove Search box
+      # For the table to grow/shrink
+      fillContainer = TRUE,
+      escape = FALSE
+    )
+  })
+  
+  # Table: User Engagement ----------------------------------------------------
+  output$table_user_engagement <- renderDT({
+    DT::datatable(
+      user_engagement(), 
+      colnames = c("Website", "Screen Page Views per User", "Sessions",
+                   "Screen Page Views", "Engagement Rate"),
+      options = list(lengthChange = FALSE, # remove "Show X entries"
+                     searching = FALSE,
+                     scrollY = "450px"), # remove Search box
+      # For the table to grow/shrink
+      fillContainer = TRUE,
+      escape = FALSE
+    )
+  })
+  
+  
+  
+  
+  # Plot: Visitors to Websites of Educational Resources ----------------------------------------------------
+  output$plot_visitor_website <- renderPlot({
+    itcr_course_data() %>% 
+      # Filter out ITN Website since it is not an "Educational Resource"
+      filter(website != "ITN Website") %>% 
+      ggplot(aes(x = reorder(website, -totalUsers), 
+                 y = totalUsers, 
+                 fill = target_audience)) +
       geom_bar(stat = "identity") +
-      geom_text(aes(label = totalUsers), size = 4, vjust = - 1) +
+      coord_flip() +
       theme_classic() +
       theme(axis.text.x = element_text(angle = 60, hjust=1),
-            legend.position = c(0.85, 0.85),
+            legend.position.inside = c(0.85, 0.85),
             text = element_text(size = 17, family = "Arial")) +
       labs(x = NULL,
-           y = "Total # of Visitors",
-           fill = "Target Audience",
-           title = "Visitor Distribution across Educational Resources") +
+           y = "Number of Visitors",
+           fill = "Target Audience") +
       scale_fill_manual(values=cbPalette)
   })
-  # Caption
-  output$unique_visitor_website_caption <- renderText({
-    "Number of visitors for various educational resources, segmented by different target audience categories: everyone, leadership, new to data, and software developers."
-  })
   
-  # Course Engagement By Modality
-  output$engagement_by_modality <- renderPlot({
+  # Plot: Course Engagement by Modality ----------------------------------------------------
+  output$plot_engagement_modality <- renderPlot({
     course_processed()  %>% 
-      ggplot(aes(x = forcats::fct_reorder(course_name, course_order),
+      # Some courses have 0 learners
+      filter(number_of_learners > 0) %>%
+      ggplot(aes(x = fct_reorder(course_name, course_order),
                  y = number_of_learners, fill = `Target Audience`,)) +
       geom_col() + 
-      facet_wrap(~modality, nrow = 3, scales = "free_y")  + 
+      coord_flip() +
       scale_fill_manual(values=cbPalette) + 
       theme_classic() + 
       theme(axis.text.x = element_text(angle = 45, hjust=1),
+            legend.position = "bottom",
             text = element_text(size = 17, family = "Arial")) + 
-      labs(x = NULL, y = "Number of Learners")
-  })
-  # Caption
-  output$engagement_by_modality_caption <- renderText({
-    "The number of learners for each modality for each course."
+      labs(x = NULL,
+           y = "Number of Learners")
   })
   
-  # Engagement Stats
-  output$engagement_stat <- renderPlot({
+  # Plot: Course Engagement on Website ----------------------------------------------------
+  output$plot_engagement_website <- renderPlot({
     itcr_course_data() %>% 
-      janitor::clean_names() %>%
+      clean_names() %>%
       select(website, screen_page_views_per_user, average_session_duration, 
              event_count_per_user, engagement_rate, target_audience) %>%
-      tidyr::pivot_longer(!c(website, target_audience), 
-                          names_to = "metric_name", 
-                          values_to = "value") %>% 
-      filter(!(website %in% c("ITN Website", "OTTR website", "metricminer.org"))) %>%
+      pivot_longer(!c(website, target_audience), 
+                   names_to = "metric_name", 
+                   values_to = "value") %>% 
+      filter(!(website %in% c("ITN Website", "OTTR website", "metricminer.org")),
+             metric_name == input$metric) %>%
       ggplot(aes(x = website, y = value, fill = target_audience)) +
       geom_bar(position = "dodge", stat = "identity") +
+      coord_flip() +
       theme_minimal() +
       labs(x = NULL,
            y = NULL,
-           fill = "Target Audience",
-           title = "Website Engagement for each Course") +
-      facet_wrap(~metric_name, scales = "free_y",
-                 labeller = labeller(metric_name = c(screen_page_views_per_user = "Screen Page Views per User",
-                                                     average_session_duration = "Average Session Duration",
-                                                     event_count_per_user = "Event Count per User",
-                                                     engagement_rate = "Engagement Rate"))) + 
+           fill = "Target Audience") +
       scale_fill_manual(values=cbPalette) +
       scale_x_discrete(limits = c("Leadership in Cancer Informatics", "NIH Data Sharing", "Ethical Data Handling", "Overleaf and Latex for Scientific Articles", "AI for Decision Makers",
                                   "Reproducibility in Cancer Informatics", "Choosing Genomics Tools", "Computing for Cancer Informatics",
@@ -485,41 +451,31 @@ server <- function(input, output) {
       theme(axis.text.x=element_text(angle=90, hjust=1), 
             plot.margin = unit(c(1.5,.5,.5,1.5), "cm"),
             text = element_text(size = 17, family = "Arial"))
-    
-  })
-  output$engagement_stat_caption <- renderText({
-    "Comprehensive analysis of website engagement for various courses, measured by average session duration, engagement rate, event count per user, and screen page views per user, categorized by target audience groups such as everyone, leadership, new to data, and software developers."
   })
   
-  
-  # Learners by Modality
-  output$learner_by_modality <- renderPlot({
+  # Plot: Course Engagement by Target ----------------------------------------------------
+  output$plot_engagement_target <- renderPlot({
     itcr_course_data_long() %>% 
       group_by(modality, target_audience) %>% 
       summarize(total_learners = sum(learner_count, na.rm = TRUE)) %>%
       ggplot(aes(x = reorder(modality, -total_learners), y = total_learners, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
+      coord_flip() +
       theme_classic() +
       theme(axis.text.x = element_text(angle = 45, hjust=1),
             legend.position = "bottom",
             text = element_text(size = 17, family = "Arial")) +
       labs(x = NULL,
            y = "Visitors/Enrollees",
-           fill = "Target Audience",
-           title = "Course Engagement by Modality") +
+           fill = "Target Audience") +
       geom_text(aes(label = total_learners), size = 4, vjust = - 1, na.rm = TRUE) + 
       ylim(c(0, 4200)) + 
       facet_wrap(~target_audience) + 
       scale_fill_manual(values=cbPalette)
   })
-  # Caption
-  output$learner_by_modality_caption <- renderText({
-    "Level of engagement in courses by modality, segmented by different target audience categories: everyone, leadership, new to data, and software developers. It contrasts the number of visitors/enrollees across website learners and total course enrollments."
-  })
   
-  
-  # Learner by Course
-  output$learner_by_course <- renderPlot({
+  # Plot: Learner by Course ----------------------------------------------------
+  output$plot_learner_course <- renderPlot({
     itcr_course_data_long() %>% 
       group_by(website, target_audience) %>% 
       summarize(total_learners = sum(learner_count, na.rm = TRUE)) %>%
@@ -529,6 +485,7 @@ server <- function(input, output) {
            y = "Total Learners by Course",
            fill = "Target Audience",
            title = "Total Number of Learners for each Course") +
+      coord_flip() +
       theme_minimal() +
       theme(axis.text.x=element_text(angle = 70, hjust=1), 
             legend.position = c(0.9, 0.85),
@@ -537,18 +494,13 @@ server <- function(input, output) {
       ylim(c(0, 1800)) + 
       scale_fill_manual(values=cbPalette)
   })
-  # Caption
-  output$learner_by_course_caption <- renderText({
-    "Total number of learners enrolled in each course, segmented by target audience categories."
-  })
   
-  
-  
-  # Coursera Learners
-  output$coursera_learner <- renderPlot({
+  # Plot: Coursera Learners ----------------------------------------------------
+  output$plot_coursera <- renderPlot({
     ggplot(itcr_course_data() %>% filter(coursera_count > 0), 
            aes(x = reorder(website, -coursera_count), y = coursera_count, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
+      coord_flip() +
       theme_classic() +
       theme(axis.text.x = element_text(angle = 60, hjust=1)) +
       labs(x = NULL,
@@ -561,17 +513,13 @@ server <- function(input, output) {
       theme(legend.position = c(0.9, 0.85),
             text = element_text(size = 17, family = "Arial"))
   })
-  # Caption
-  output$coursera_learner_caption <- renderText({
-    "Number of enrollments for various Coursera courses, delineating the popularity of courses among different target audiences, such as leadership, new to data, and software developers, with the 'Computing for Cancer Informatics' course showing the highest enrollment figures."
-  })
   
-  
-  # Leanpub Learners
-  output$leanpub_learner <- renderPlot({
+  # Plot: Leanpub Learners ----------------------------------------------------
+  output$plot_leanpub <- renderPlot({
     ggplot(itcr_course_data() %>% filter(leanpub_count > 0),
            aes(x = reorder(website, -leanpub_count), y = leanpub_count, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
+      coord_flip() +
       theme_classic() +
       theme(axis.text.x = element_text(angle = 60, hjust=1)) +
       labs(x = NULL,
@@ -584,13 +532,9 @@ server <- function(input, output) {
       theme(legend.position = c(0.9, 0.85),
             text = element_text(size = 17, family = "Arial"))
   })
-  # Caption
-  output$leanpub_learner_caption <- renderText({
-    "Number of Leanpub course enrollments, highlighting interest across different subjects with 'Leadership in Cancer Informatics' attracting the most learners, categorized by target audiences like leadership, those new to data, and software developers."
-  })
   
-  # Learners by Launch Date
-  output$learner_by_launch_date <- renderPlot({
+  # Plot: Learners by Launch Date ----------------------------------------------------
+  output$plot_learner_launch_date <- renderPlot({
     itcr_course_data() %>% 
       filter(!(website %in% c("ITN Website", "OTTR website", "metricminer.org"))) %>%
       mutate(duration = today() - website_launch) %>%
@@ -608,14 +552,85 @@ server <- function(input, output) {
       scale_color_manual(values=cbPalette) + 
       ggrepel::geom_text_repel(aes(x = duration, y = webAndEnrollmentTotals, label = website), size = 6, vjust = - 1, na.rm = TRUE)
   })
-  # Caption
-  output$learner_by_launch_date_caption <- renderText({
-    "How long a course has been out (in days) is plotted on the x-axis vs the number the popularity of the course on the y-axis. We measured the popularity by considering the number of unique bookdown views together with the number of Coursera and Leanpub enrollments."
+  
+  # Plot: Workshop Recommendation ----------------------------------------------------
+  output$plot_workshop_recommendation <- renderPlot({
+    itcr_slido_data() %>% 
+      clean_names() %>% 
+      mutate(merged_likely_rec = if_else(is.na(how_likely_would_you_be_to_recommend_this_workshop), 
+                                         how_likely_would_you_be_to_recommend_this_workshop_2, 
+                                         how_likely_would_you_be_to_recommend_this_workshop),
+             merged_likely_rec = as.numeric(merged_likely_rec)) %>% 
+      ggplot(aes(merged_likely_rec)) +
+      geom_bar(fill = "#28ae80") +
+      theme_classic() +
+      theme(text = element_text(size = 17, family = "Arial")) +
+      labs(y = "Count", 
+           x = "Rating")
   })
   
-  # CRAN Download Stats
-  output$cran_download_stats <- renderPlot({
-    cran_download_stats() %>% 
+  # Plot: Workshop Relevance ----------------------------------------------------
+  output$plot_workshop_relevance <- renderPlot({
+    itcr_slido_data() %>% 
+      clean_names() %>% 
+      mutate(merged_likely_rec = if_else(is.na(how_likely_would_you_be_to_recommend_this_workshop), 
+                                         how_likely_would_you_be_to_recommend_this_workshop_2, 
+                                         how_likely_would_you_be_to_recommend_this_workshop),
+             merged_likely_rec = as.numeric(merged_likely_rec)) %>% 
+      filter(how_likely_are_you_to_use_what_you_learned_in_your_daily_work %in% c("Extremely likely", 
+                                                                                  "Likely",
+                                                                                  "Not very likely", 
+                                                                                  "Somewhat likely", 
+                                                                                  "Very likely")) %>% 
+      mutate(how_likely_are_you_to_use_what_you_learned_in_your_daily_work = factor(how_likely_are_you_to_use_what_you_learned_in_your_daily_work,
+                                                                                    levels = c("Not very likely", 
+                                                                                               "Somewhat likely", 
+                                                                                               "Likely", 
+                                                                                               "Very likely",
+                                                                                               "Extremely likely"))) %>% 
+      ggplot(aes(x = how_likely_are_you_to_use_what_you_learned_in_your_daily_work)) +
+      geom_bar(stat = "count", fill = "#28ae80") +
+      theme_classic() +
+      theme(axis.text.x = element_text(hjust=1),
+            text = element_text(size = 17, family = "Arial")) +
+      labs(x = NULL,
+           y = "Count")
+  })
+  
+  # Plot: Workshop Career Stage ----------------------------------------------------
+  output$plot_workshop_career_stage <- renderPlot({
+    career_stage_processed() %>% 
+      ggplot(aes(x = reorder(Stage, -count), y = count, fill = Trainee)) +
+      geom_bar(stat = "identity") +
+      coord_flip() +
+      ylab("Number of Registrants") +
+      theme_bw() + 
+      theme(panel.background = element_blank(),
+            panel.grid = element_blank(), 
+            axis.text.x = element_text(angle = 45, hjust=1),
+            text = element_text(size = 17, family = "Arial")) +
+      scale_fill_manual(values = c("#440154", "#28ae80"))
+  })
+  
+  # Plot: Workshop Review ----------------------------------------------------
+  output$plot_workshop_review <- renderPlot({
+    wordcloud::wordcloud(words = poll_results()$lemma, 
+                         freq = poll_results()$n,
+                         colors = c("#98fb98", "#83D475", "#355E3B"),
+                         min.freq = 3, scale = c(3, .4))
+  })
+  
+  # Plot: Workshop Feedback ----------------------------------------------------
+  output$plot_workshop_improvement <- renderPlot({
+    wordcloud::wordcloud(words = poll_rec_results()$lemma, 
+                         freq= poll_rec_results()$n,
+                         colors = c("#98fb98", "#83D475", "#355E3B"),
+                         min.freq = 3, scale = c(4, .4))
+  })
+  
+  # Plot: Monthly CRAN Download ----------------------------------------------------
+  output$plot_monthly_cran_download <- renderPlot({
+    cran_download() %>% 
       ggplot(aes(Month, monthly_downloads, group=package, color = package)) + 
       geom_line() + 
       geom_point() +
@@ -627,100 +642,19 @@ server <- function(input, output) {
       geom_vline(aes(xintercept="2022-02"), linetype='dashed', color = '#28ae80') + #ottrpal published date 
       geom_vline(aes(xintercept="2023-07"), linetype='dashed', color = '#2c728e') + #conrad published date
       theme(axis.text.x = element_text(angle = 90),
-            legend.position = c(0.05, 0.9)) + #clean up x-axis labels
+            legend.position = "bottom") + #clean up x-axis labels
       labs(x = NULL,
            y = "Monthly Downloads",
            color = "R Packages")
   })
-  # Caption
-  output$cran_download_stats_caption <- renderText({
-    "Monthly downloads of four R packages from CRAN ('ari', 'conrad', 'ottrpal', 'text2speech') showing fluctuations over time and notable spikes or drops that could indicate changes in usage trends or updates affecting the packages' popularity."
-  })
   
-  
-  # How Likely woud you be to recommend this workshop?
-  output$recommend_workshop <- renderPlot({
-    as.numeric(poll_data()$merged_likely_rec) %>%
-      qplot(geom = "bar") +
-      geom_bar(fill = "#CBC3E3") +
-      theme_classic() +
-      theme(text = element_text(size = 17, family = "Arial")) +
-      labs(title = "How likely would you be to recommend this workshop?", 
-           y = "count", 
-           x = "rating")
-  })
-  # Caption
-  output$recommend_workshop_caption <- renderText({ 
-    "Responses from workshop attendees on their likelihood to recommend the workshop, rated on a scale from 1 (not likely at all) to 10 (very likely). The y-axis represents the count of respondents for each rating." 
-  })
-  
-  # Workshop Relevance Feedback
-  output$workshop_relevance_feedback <- renderPlot({
-    ggplot(poll_data_subset(), aes(x = how_likely_are_you_to_use_what_you_learned_in_your_daily_work)) +
-      geom_bar(stat = "count", fill = "#CBC3E3") +
-      theme_classic() +
-      theme(axis.text.x = element_text(angle = 45, hjust=1),
-            text = element_text(size = 17, family = "Arial")) +
-      labs(title = "How likely are you to use what you learned in your daily work?",
-           x = NULL)
-    
-  })
-  # Caption
-  output$workshop_relevance_feedback_caption <- renderText({
-    "Feedback from workshop attendees on the relevance of the workshop content to their daily tasks and their likelihood of applying the learned material. The y-axis displays the count of respondents for each rating level."
-  })
-  
-  output$workshop_career_stage <- renderPlot({
-    ggplot(career_stage_processed(), aes(x=reorder(Stage, -count), y=count, fill=Trainee)) +
-      geom_bar(stat = "identity") +
-      xlab("Career stage") +
-      ylab("Number of registrees") +
-      ggtitle("Career Stage of Workshop Registrants") +
-      theme_bw() + 
-      theme(panel.background = element_blank(),
-            panel.grid = element_blank(), 
-            axis.text.x = element_text(angle = 45, hjust=1),
-            text = element_text(size = 17, family = "Arial")) +
-      scale_fill_manual(values = c("#440154", "#28ae80"))
-  })
-  # Caption
-  output$workshop_career_stage_caption <- renderText({
-    "Distribution of workshop registrants across different career stages and a distinction between trainees and non-trainees indicated by color."
-  })
-  
-  
-  
-  # What did you like most about workshop
-  output$like_most_about_workshop <- renderPlot({
-    wordcloud::wordcloud(words = results()$lemma, 
-                         freq = results()$n,
-                         colors = c("#98fb98", "#83D475", "#355E3B"),
-                         min.freq = 3, scale = c(3, .4))
-  })
-  # Caption
-  output$like_most_about_workshop_caption <- renderText({
-    "This word cloud shows the most used terms in workshop reviews when asked 'what did you like most about the workshop?' Terms like 'interactive', 'hands-on', 'activity', and 'how' suggests workshop participants really enjoy the interactivity of the workshops."
-  })
-  
-  
-  # Recommendations for Improvements
-  output$recommendation_improvement <- renderPlot({
-    wordcloud::wordcloud(words = rec_results()$lemma, 
-                         freq=rec_results()$n,
-                         colors = c("#98fb98", "#83D475", "#355E3B"),
-                         min.freq = 3, scale = c(4, .4))
-  })
-  # Caption
-  output$recommendation_improvement_caption <- renderText({
-    "Feedback themes for a workshop, with the most significant focus on 'more', 'how', 'time', and 'example', suggesting participants are interested in detailed explanations, practical examples, and perhaps more time or more workshop offerings. "
-  })
-  
-  # Collaborations - All
-  output$collaboration_all <- renderPlot({
-    collabs() %>% 
+  # Plot: All Collaborations ----------------------------------------------------
+  output$plot_collaboration_all <- renderPlot({
+    collabs_processed() %>% 
       count(Category) %>% 
       ggplot(aes(y = n, x = reorder(Category,-n), fill = Category)) +
       geom_bar(position = "dodge", stat = "identity") +
+      coord_flip() +
       theme_minimal() +
       theme(axis.text.x=element_text(angle=60, hjust=1), 
             strip.text.x = element_text(size = 6),
@@ -728,65 +662,24 @@ server <- function(input, output) {
             text = element_text(size = 17, family = "Arial"),
             plot.margin = unit(c(.75,.5,.5,.5), "cm")) + 
       xlab(NULL) +
-      ylab("N") +
-      ggtitle("Collaborations with All Individuals")
-  })
-  # Caption
-  output$collaboration_all_caption <- renderText({
-    "This plot shows the large variety of collaborations and engagements with the ITN. Distribution of various academic and professional collaborations, such as manuscript authorship, course development, and networking events, showing how frequently each collaboration was completed."
+      ylab(NULL)
   })
   
-  # Collaborations - ITCR Funded
-  output$collaboration_itcr <- renderPlot({
-    collabs() %>% 
+  # Plot: ITCR Collaborations ----------------------------------------------------
+  output$plot_collaboration_itcr <- renderPlot({
+    collabs_processed() %>% 
       filter(ITN_ITCR_or_external == "ITCR") %>%
       count(Category) %>%
       ggplot(aes(y =n, x=reorder(Category, -n), fill = Category )) +
       geom_bar(position="dodge", stat = "identity") +
+      coord_flip() +
       theme_minimal() +
       theme(axis.text.x=element_text(angle=60, hjust=1), strip.text.x = element_text(size=6),
             text = element_text(size = 17, family = "Arial"),
             legend.position = "none",
             plot.margin = unit(c(.75,.5,.5,.5), "cm")) +
       xlab(NULL) +
-      ylab("N") +
-      ggtitle("Collaborations with ITCR funded individuals only")
-    
-  })
-  # Caption
-  output$collaboration_itcr_caption <- renderText({
-    "This plot also shows the number of collaborations but only collaborations that were completed with ITCR funded individuals. The number of individuals who have helped with each type of collaboration within the ITCR community. Most individuals were ITCR investigators but some were trainees or scientific staff."
-  })
-  
-  
-  
-  # Tables --------
-  
-  # User Totals
-  output$user_totals <- renderDT({
-    datatable(
-      user_totals(), 
-      colnames = c("Website", "Active Users", "Avg Session Duration"),
-      options = list(lengthChange = FALSE, # remove "Show X entries"
-                     searching = FALSE), # remove Search box
-      # For the table to grow/shrink
-      fillContainer = TRUE,
-      escape = FALSE
-    )
-  })
-  
-  # User Engagement
-  output$user_engagement <- renderDT({
-    datatable(
-      user_engagement(), 
-      colnames = c("Website", "Screen Page Views per User", "Sessions",
-                   "Screen Page Views", "Engagement Rate"),
-      options = list(lengthChange = FALSE, # remove "Show X entries"
-                     searching = FALSE), # remove Search box
-      # For the table to grow/shrink
-      fillContainer = TRUE,
-      escape = FALSE
-    )
+      ylab(NULL) 
   })
   
   
