@@ -16,6 +16,9 @@ library(DT)
 library(googlesheets4)
 gs4_deauth()
 
+# Time interval
+time_interval <- 604800000
+
 # Everyone, Leadership, new to data science, software developers
 cbPalette <- c("#E69F02", "#56B4E9", "#009E73", "#008080") 
 
@@ -25,27 +28,6 @@ viridis_cc <- c("#440154", "#2c728e", "#28ae80", "#addc30")
 
 # Wordcloud 
 ud_model <- udpipe::udpipe_load_model("wordcloud-model.udpipe")
-
-# Time interval
-time_interval <- 604800000
-
-# Links
-link_itn <- tags$a(
-  shiny::icon("house"), "ITN",
-  href = "https://www.itcrtraining.org/home",
-  target = "_blank"
-)
-link_code <- tags$a(
-  shiny::icon("github"), "Code",
-  href = "https://github.com/FredHutch/itn-dashboard",
-  target = "_blank"
-)
-link_help <- tags$a(
-  shiny::icon("circle-question"), "Help",
-  href = "https://github.com/FredHutch/itn-dashboard/issues/new",
-  target = "_blank"
-)
-
 
 ui <- dashboardPage(
   # Dashboard Header ----------------------------------------------------
@@ -101,31 +83,33 @@ ui <- dashboardPage(
               ),
               # Third row
               fluidRow(
-                box(title = "Learners by Course",
+                box(title = "Total Number of Learners for each Course",
                     plotOutput("plot_learner_course")),
                 
-                box(title = "Coursera Learners",
-                    plotOutput("plot_coursera"))
+                box(title = "Number of Coursera Enrollments by Course",
+                    plotOutput("plot_coursera"),
+                    footer = "*Data was manually updated, and may be outdated.")
               ),
               # Fourth row
               fluidRow(
-                box(title = "Leanpub Learners",
-                    plotOutput("plot_leanpub")),
+                box(title = "Number of Leanpub Enrollments by Course",
+                    plotOutput("plot_leanpub"),
+                    footer = "*Data was manually updated, and may be outdated."),
                 
-                box(title = "Learners by Launch Date",
+                box(title = "Course Popularity over Time",
                     plotOutput("plot_learner_launch_date"))
               )
       ),
       # Tables Tab ----------------------------------------------------
       tabItem(tabName = "tab_courses_tables",
-                tabBox(side = "left",
-                       height = "400px",
-                       tabPanel("User Totals",
-                                DTOutput("table_user_total")),
-                       tabPanel("User Engagement", 
-                                DTOutput("table_user_engagement")),
-                       width = 12
-                )
+              tabBox(side = "left",
+                     height = "400px",
+                     tabPanel("User Totals",
+                              DTOutput("table_user_total")),
+                     tabPanel("User Engagement", 
+                              DTOutput("table_user_engagement")),
+                     width = 12
+              )
               
       ),
       
@@ -395,15 +379,12 @@ server <- function(input, output) {
       filter(!(website %in% c("ITN Website", "widget", "DaSL Collection", 
                               "proof", "metricminer.org", "OTTR website",
                               "Developing_WDL_Workflows"))) %>% 
-      ggplot(aes(x = reorder(website, -totalUsers), 
-                 y = totalUsers, 
-                 fill = target_audience)) +
+      ggplot(aes(x = reorder(website, -totalUsers), y = totalUsers, fill = target_audience)) +
       geom_bar(stat = "identity") +
+      geom_text(aes(label = totalUsers), hjust = -0.2) +
       coord_flip() +
       theme_classic() +
-      theme(axis.text.x = element_text(angle = 60, hjust=1),
-            legend.position.inside = c(0.85, 0.85),
-            text = element_text(size = 17, family = "Arial"),
+      theme(text = element_text(size = 17, family = "Arial"),
             legend.position = "bottom") +
       labs(x = NULL,
            y = "Number of Visitors",
@@ -414,16 +395,17 @@ server <- function(input, output) {
   # Plot: Engagement by Modality ----------------------------------------------------
   output$plot_engagement_modality <- renderPlot({
     course_processed()  %>% 
+      filter(modality == input$modality) %>% 
       # Some courses have 0 learners
       filter(number_of_learners > 0) %>%
-      ggplot(aes(x = fct_reorder(course_name, course_order),
-                 y = number_of_learners, fill = `Target Audience`,)) +
+      ggplot(aes(x = fct_reorder(course_name, number_of_learners),
+                 y = number_of_learners, fill = `Target Audience`)) +
       geom_col() + 
+      geom_text(aes(label = number_of_learners), hjust = -0.2) +
       coord_flip() +
       scale_fill_manual(values=cbPalette) + 
       theme_classic() + 
-      theme(axis.text.x = element_text(angle = 45, hjust=1),
-            legend.position = "bottom",
+      theme(legend.position = "bottom",
             text = element_text(size = 17, family = "Arial")) + 
       labs(x = NULL,
            y = "Number of Learners")
@@ -442,6 +424,7 @@ server <- function(input, output) {
              metric_name == input$metric) %>%
       ggplot(aes(x = website, y = value, fill = target_audience)) +
       geom_bar(position = "dodge", stat = "identity") +
+      geom_text(aes(label = round(value, 1), hjust = -0.2)) +
       coord_flip() +
       theme_minimal() +
       labs(x = NULL,
@@ -451,9 +434,7 @@ server <- function(input, output) {
       scale_x_discrete(limits = c("Leadership in Cancer Informatics", "NIH Data Sharing", "Ethical Data Handling", "Overleaf and Latex for Scientific Articles", "AI for Decision Makers",
                                   "Reproducibility in Cancer Informatics", "Choosing Genomics Tools", "Computing for Cancer Informatics",
                                   "Documentation and Usability", "Advanced Reproducibility", "AI for Efficient Programming", "GitHub Automation for Scientists")) +
-      theme(axis.text.x=element_text(angle=90, hjust=1), 
-            plot.margin = unit(c(1.5,.5,.5,1.5), "cm"),
-            text = element_text(size = 17, family = "Arial"),
+      theme(text = element_text(size = 17, family = "Arial"),
             legend.position = "bottom")
   })
   
@@ -464,11 +445,10 @@ server <- function(input, output) {
       summarize(total_learners = sum(learner_count, na.rm = TRUE)) %>%
       ggplot(aes(x = reorder(modality, -total_learners), y = total_learners, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
-      geom_text(aes(label = total_learners), size = 4, vjust = - 1, na.rm = TRUE) + 
+      geom_text(aes(label = total_learners), hjust = -0.2, na.rm = TRUE) + 
       coord_flip() +
       theme_classic() +
-      theme(axis.text.x = element_text(angle = 45, hjust=1),
-            legend.position = "bottom",
+      theme(legend.position = "bottom",
             text = element_text(size = 17, family = "Arial")) +
       labs(x = NULL,
            y = "Visitors/Enrollees",
@@ -486,33 +466,33 @@ server <- function(input, output) {
       filter(!(website %in% c("widget", "DaSL Collection", "Developing_WDL_Workflows", "proof"))) %>% 
       ggplot(aes(x = reorder(website, -total_learners), y = total_learners, fill = target_audience)) + 
       geom_bar(stat = "identity") + 
+      geom_text(aes(label = total_learners), hjust = -0.2, na.rm = TRUE) +
       labs(x = NULL, 
            y = "Total Learners by Course",
            fill = "Target Audience",
-           title = "Total Number of Learners for each Course") +
+           title = NULL) +
       coord_flip() +
       theme_minimal() +
-      theme(axis.text.x=element_text(angle = 70, hjust=1), 
-            text = element_text(size = 17, family = "Arial"),
+      theme(text = element_text(size = 17, family = "Arial"),
             legend.position = "bottom") + 
-      geom_text(aes(label = total_learners), size = 4, vjust = - 1, na.rm = TRUE) +
+      
       ylim(c(0, 1800)) + 
       scale_fill_manual(values=cbPalette)
   })
   
   # Plot: Coursera Learners ----------------------------------------------------
   output$plot_coursera <- renderPlot({
-    ggplot(itcr_course_data() %>% filter(coursera_count > 0), 
-           aes(x = reorder(website, -coursera_count), y = coursera_count, fill = target_audience)) +
+    itcr_course_data() %>%
+      filter(coursera_count > 0) %>% 
+      ggplot(aes(x = reorder(website, -coursera_count), y = coursera_count, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
+      geom_text(aes(label = coursera_count), hjust = -0.2, na.rm = TRUE) +
       coord_flip() +
       theme_classic() +
-      theme(axis.text.x = element_text(angle = 60, hjust=1)) +
       labs(x = NULL,
            y = "Coursera enrollments",
            fill = "Target Audience",
-           title = "Number of Coursera Enrollments by Course") +
-      geom_text(aes(label = coursera_count), size = 4, vjust = - 1, na.rm = TRUE) +
+           title = NULL) +
       ylim(c(0, 1200)) + 
       scale_fill_manual(values = c("#56B4E9", "#009E73", "#008080")) +
       theme(text = element_text(size = 17, family = "Arial"),
@@ -521,17 +501,17 @@ server <- function(input, output) {
   
   # Plot: Leanpub Learners ----------------------------------------------------
   output$plot_leanpub <- renderPlot({
-    ggplot(itcr_course_data() %>% filter(leanpub_count > 0),
-           aes(x = reorder(website, -leanpub_count), y = leanpub_count, fill = target_audience)) +
+    itcr_course_data() %>% 
+      filter(leanpub_count > 0) %>% 
+      ggplot(aes(x = reorder(website, -leanpub_count), y = leanpub_count, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
+      geom_text(aes(label = leanpub_count), hjust = -0.2, na.rm = TRUE) +
       coord_flip() +
       theme_classic() +
-      theme(axis.text.x = element_text(angle = 60, hjust=1)) +
       labs(x = NULL,
            y = "Leanpub enrollments",
            fill = "Target Audience",
-           title = "Number of Leanpub Enrollments by Course") +
-      geom_text(aes(label = leanpub_count), size = 4, vjust = - 1, na.rm = TRUE) +
+           title = NULL) +
       ylim(c(0, 40)) + 
       scale_fill_manual(values = c("#56B4E9", "#009E73", "#008080")) +
       theme(text = element_text(size = 17, family = "Arial"),
@@ -543,17 +523,17 @@ server <- function(input, output) {
     itcr_course_data() %>% 
       filter(!(website %in% c("ITN Website", "OTTR website", "metricminer.org"))) %>%
       mutate(duration = today() - website_launch) %>%
-      ggplot(aes(x = duration, y = webAndEnrollmentTotals, color = target_audience)) + 
+      ggplot(aes(x = duration, y = website_count, color = target_audience)) + 
       geom_point() + 
       theme(panel.grid = element_line("black", linewidth = 0.25), 
             panel.background = element_blank(), 
             panel.border = element_rect("black", fill=NA, linewidth=0.5),
-            legend.position = c(0.918, 0.25),
+            legend.position = "bottom",
             text = element_text(size = 17, family = "Arial")) +
       labs(x = "How long the course has been out",
-           y = "Bookdown Views + Coursera & Leanpub Enrollments",
+           y = "Bookdown Views",
            color = "Target Audience",
-           title = "Course Popularity over Time") +
+           title = NULL) +
       scale_color_manual(values=cbPalette) + 
       ggrepel::geom_text_repel(aes(x = duration, y = webAndEnrollmentTotals, label = website), size = 6, vjust = - 1, na.rm = TRUE)
   })
@@ -568,6 +548,7 @@ server <- function(input, output) {
              merged_likely_rec = as.numeric(merged_likely_rec)) %>% 
       ggplot(aes(merged_likely_rec)) +
       geom_bar(fill = "#28ae80") +
+      geom_text(stat = 'count', aes(label = ..count..), vjust = -0.4) +
       theme_classic() +
       theme(text = element_text(size = 17, family = "Arial")) +
       labs(y = "Count", 
@@ -595,6 +576,7 @@ server <- function(input, output) {
                                                                                                "Extremely likely"))) %>% 
       ggplot(aes(x = how_likely_are_you_to_use_what_you_learned_in_your_daily_work)) +
       geom_bar(stat = "count", fill = "#28ae80") +
+      geom_text(stat = 'count', aes(label = ..count..), vjust = -0.4) +
       theme_classic() +
       theme(axis.text.x = element_text(hjust=1),
             text = element_text(size = 17, family = "Arial")) +
@@ -607,12 +589,13 @@ server <- function(input, output) {
     career_stage_processed() %>% 
       ggplot(aes(x = reorder(Stage, -count), y = count, fill = Trainee)) +
       geom_bar(stat = "identity") +
+      geom_text(aes(label = count), hjust = -0.2) +
       coord_flip() +
+      xlab(NULL) +
       ylab("Number of Registrants") +
       theme_bw() + 
       theme(panel.background = element_blank(),
             panel.grid = element_blank(), 
-            axis.text.x = element_text(angle = 45, hjust=1),
             text = element_text(size = 17, family = "Arial")) +
       scale_fill_manual(values = c("#440154", "#28ae80"))
   })
@@ -659,10 +642,10 @@ server <- function(input, output) {
       count(Category) %>% 
       ggplot(aes(y = n, x = reorder(Category,-n), fill = Category)) +
       geom_bar(position = "dodge", stat = "identity") +
+      geom_text(aes(label = n), hjust = -0.2) +
       coord_flip() +
       theme_minimal() +
-      theme(axis.text.x=element_text(angle=60, hjust=1), 
-            strip.text.x = element_text(size = 6),
+      theme(strip.text.x = element_text(size = 6),
             legend.position="none", 
             text = element_text(size = 17, family = "Arial"),
             plot.margin = unit(c(.75,.5,.5,.5), "cm")) + 
@@ -677,10 +660,10 @@ server <- function(input, output) {
       count(Category) %>%
       ggplot(aes(y =n, x=reorder(Category, -n), fill = Category )) +
       geom_bar(position="dodge", stat = "identity") +
+      geom_text(aes(label = n), hjust = -0.2) +
       coord_flip() +
       theme_minimal() +
-      theme(axis.text.x=element_text(angle=60, hjust=1), strip.text.x = element_text(size=6),
-            text = element_text(size = 17, family = "Arial"),
+      theme(text = element_text(size = 17, family = "Arial"),
             legend.position = "none",
             plot.margin = unit(c(.75,.5,.5,.5), "cm")) +
       xlab(NULL) +
@@ -701,4 +684,3 @@ if (!interactive()) {
 }
 
 shinyApp(ui, server, options=options)
-
