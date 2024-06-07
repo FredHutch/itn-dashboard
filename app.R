@@ -388,11 +388,13 @@ server <- function(input, output) {
   
   
   
-  # Plot: Visitors to Websites of Educational Resources ----------------------------------------------------
+  # Plot: Visitors across Educational Resources ----------------------------------------------------
   output$plot_visitor_website <- renderPlot({
     itcr_course_data() %>% 
       # Filter out ITN Website since it is not an "Educational Resource"
-      filter(website != "ITN Website") %>% 
+      filter(!(website %in% c("ITN Website", "widget", "DaSL Collection", 
+                              "proof", "metricminer.org", "OTTR website",
+                              "Developing_WDL_Workflows"))) %>% 
       ggplot(aes(x = reorder(website, -totalUsers), 
                  y = totalUsers, 
                  fill = target_audience)) +
@@ -401,14 +403,15 @@ server <- function(input, output) {
       theme_classic() +
       theme(axis.text.x = element_text(angle = 60, hjust=1),
             legend.position.inside = c(0.85, 0.85),
-            text = element_text(size = 17, family = "Arial")) +
+            text = element_text(size = 17, family = "Arial"),
+            legend.position = "bottom") +
       labs(x = NULL,
            y = "Number of Visitors",
            fill = "Target Audience") +
       scale_fill_manual(values=cbPalette)
   })
   
-  # Plot: Course Engagement by Modality ----------------------------------------------------
+  # Plot: Engagement by Modality ----------------------------------------------------
   output$plot_engagement_modality <- renderPlot({
     course_processed()  %>% 
       # Some courses have 0 learners
@@ -426,7 +429,7 @@ server <- function(input, output) {
            y = "Number of Learners")
   })
   
-  # Plot: Course Engagement on Website ----------------------------------------------------
+  # Plot: Website Engagement ----------------------------------------------------
   output$plot_engagement_website <- renderPlot({
     itcr_course_data() %>% 
       clean_names() %>%
@@ -450,16 +453,18 @@ server <- function(input, output) {
                                   "Documentation and Usability", "Advanced Reproducibility", "AI for Efficient Programming", "GitHub Automation for Scientists")) +
       theme(axis.text.x=element_text(angle=90, hjust=1), 
             plot.margin = unit(c(1.5,.5,.5,1.5), "cm"),
-            text = element_text(size = 17, family = "Arial"))
+            text = element_text(size = 17, family = "Arial"),
+            legend.position = "bottom")
   })
   
-  # Plot: Course Engagement by Target ----------------------------------------------------
+  # Plot: Course Engagement by Target Audience ----------------------------------------------------
   output$plot_engagement_target <- renderPlot({
     itcr_course_data_long() %>% 
       group_by(modality, target_audience) %>% 
       summarize(total_learners = sum(learner_count, na.rm = TRUE)) %>%
       ggplot(aes(x = reorder(modality, -total_learners), y = total_learners, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
+      geom_text(aes(label = total_learners), size = 4, vjust = - 1, na.rm = TRUE) + 
       coord_flip() +
       theme_classic() +
       theme(axis.text.x = element_text(angle = 45, hjust=1),
@@ -468,7 +473,6 @@ server <- function(input, output) {
       labs(x = NULL,
            y = "Visitors/Enrollees",
            fill = "Target Audience") +
-      geom_text(aes(label = total_learners), size = 4, vjust = - 1, na.rm = TRUE) + 
       ylim(c(0, 4200)) + 
       facet_wrap(~target_audience) + 
       scale_fill_manual(values=cbPalette)
@@ -479,7 +483,8 @@ server <- function(input, output) {
     itcr_course_data_long() %>% 
       group_by(website, target_audience) %>% 
       summarize(total_learners = sum(learner_count, na.rm = TRUE)) %>%
-      ggplot(aes(y = total_learners, x = reorder(website, -total_learners), fill = target_audience)) + 
+      filter(!(website %in% c("widget", "DaSL Collection", "Developing_WDL_Workflows", "proof"))) %>% 
+      ggplot(aes(x = reorder(website, -total_learners), y = total_learners, fill = target_audience)) + 
       geom_bar(stat = "identity") + 
       labs(x = NULL, 
            y = "Total Learners by Course",
@@ -488,8 +493,8 @@ server <- function(input, output) {
       coord_flip() +
       theme_minimal() +
       theme(axis.text.x=element_text(angle = 70, hjust=1), 
-            legend.position = c(0.9, 0.85),
-            text = element_text(size = 17, family = "Arial")) + 
+            text = element_text(size = 17, family = "Arial"),
+            legend.position = "bottom") + 
       geom_text(aes(label = total_learners), size = 4, vjust = - 1, na.rm = TRUE) +
       ylim(c(0, 1800)) + 
       scale_fill_manual(values=cbPalette)
@@ -510,8 +515,8 @@ server <- function(input, output) {
       geom_text(aes(label = coursera_count), size = 4, vjust = - 1, na.rm = TRUE) +
       ylim(c(0, 1200)) + 
       scale_fill_manual(values = c("#56B4E9", "#009E73", "#008080")) +
-      theme(legend.position = c(0.9, 0.85),
-            text = element_text(size = 17, family = "Arial"))
+      theme(text = element_text(size = 17, family = "Arial"),
+            legend.position = "bottom")
   })
   
   # Plot: Leanpub Learners ----------------------------------------------------
@@ -529,8 +534,8 @@ server <- function(input, output) {
       geom_text(aes(label = leanpub_count), size = 4, vjust = - 1, na.rm = TRUE) +
       ylim(c(0, 40)) + 
       scale_fill_manual(values = c("#56B4E9", "#009E73", "#008080")) +
-      theme(legend.position = c(0.9, 0.85),
-            text = element_text(size = 17, family = "Arial"))
+      theme(text = element_text(size = 17, family = "Arial"),
+            legend.position = "bottom")
   })
   
   # Plot: Learners by Launch Date ----------------------------------------------------
