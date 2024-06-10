@@ -22,6 +22,9 @@ time_interval <- 604800000
 # Everyone, Leadership, new to data science, software developers
 cbPalette <- c("#E69F02", "#56B4E9", "#009E73", "#008080")
 
+#Leadership, new to data, software developers
+cbLEPalette <-c("#56B4E9", "#009E73", "#008080")
+
 xlabel_view <- c(rep(c("black", "transparent", "transparent", "transparent"), 41), "black", "transparent") #166 rows
 #cc <- rev(c("#fde725", "#addc30", "#5ec962", "#28ae80", "#21918c", "#2c728e", "#3b528b", "#472d7b", "#440154"))
 viridis_cc <- c("#440154", "#2c728e", "#28ae80", "#addc30")
@@ -382,14 +385,16 @@ server <- function(input, output) {
       ggplot(aes(x = reorder(website, -totalUsers), y = totalUsers, fill = target_audience)) +
       geom_bar(stat = "identity") +
       geom_text(aes(label = totalUsers), hjust = -0.2) +
-      coord_flip() +
+      coord_flip(clip="off") +
       theme_classic() +
       theme(text = element_text(size = 17, family = "Arial"),
-            legend.position = "bottom") +
+            legend.position = "inside",
+            legend.position.inside = c(0.75,0.75)) +
       labs(x = NULL,
            y = "Number of Visitors",
            fill = "Target Audience") +
-      scale_fill_manual(values=cbPalette)
+      scale_fill_manual(values=cbLEPalette) +
+      guides(fill=guide_legend(nrow=3))
   })
 
   # Plot: Engagement by Modality ----------------------------------------------------
@@ -401,14 +406,16 @@ server <- function(input, output) {
       ggplot(aes(x = fct_reorder(course_name, number_of_learners),
                  y = number_of_learners, fill = `Target Audience`)) +
       geom_col() +
-      geom_text(aes(label = number_of_learners), hjust = -0.2) +
-      coord_flip() +
-      scale_fill_manual(values=cbPalette) +
+      geom_text(aes(label = number_of_learners), hjust = -0.1) +
+      coord_flip(clip = "off") +
+      scale_fill_manual(values=cbLEPalette) +
       theme_classic() +
-      theme(legend.position = "bottom",
+      theme(legend.position = "inside",
+            legend.position.inside = c(0.75, 0.25),
             text = element_text(size = 17, family = "Arial")) +
       labs(x = NULL,
-           y = "Number of Learners")
+           y = "Number of Learners") +
+      guides(fill=guide_legend(nrow=3))
   })
 
   # Plot: Website Engagement ----------------------------------------------------
@@ -426,16 +433,17 @@ server <- function(input, output) {
       geom_bar(position = "dodge", stat = "identity") +
       geom_text(aes(label = round(value, 1), hjust = -0.2)) +
       coord_flip() +
-      theme_minimal() +
+      theme_classic() +
       labs(x = NULL,
            y = NULL,
            fill = "Target Audience") +
-      scale_fill_manual(values=cbPalette) +
+      scale_fill_manual(values=cbLEPalette, limits = c("Leadership", "New to data", "Software developers")) +
       scale_x_discrete(limits = c("Leadership in Cancer Informatics", "NIH Data Sharing", "Ethical Data Handling", "Overleaf and Latex for Scientific Articles", "AI for Decision Makers",
                                   "Reproducibility in Cancer Informatics", "Choosing Genomics Tools", "Computing for Cancer Informatics",
                                   "Documentation and Usability", "Advanced Reproducibility", "AI for Efficient Programming", "GitHub Automation for Scientists")) +
       theme(text = element_text(size = 17, family = "Arial"),
-            legend.position = "bottom")
+            legend.position = "bottom") +
+      guides(fill=guide_legend(nrow=3))
   })
 
   # Plot: Course Engagement by Target Audience ----------------------------------------------------
@@ -448,7 +456,7 @@ server <- function(input, output) {
       geom_text(aes(label = total_learners), hjust = -0.2, na.rm = TRUE) +
       coord_flip() +
       theme_classic() +
-      theme(legend.position = "bottom",
+      theme(legend.position = "none",
             text = element_text(size = 17, family = "Arial")) +
       labs(x = NULL,
            y = "Visitors/Enrollees",
@@ -471,13 +479,15 @@ server <- function(input, output) {
            y = "Total Learners by Course",
            fill = "Target Audience",
            title = NULL) +
-      coord_flip() +
-      theme_minimal() +
+      coord_flip(clip='off') +
+      theme_classic() +
       theme(text = element_text(size = 17, family = "Arial"),
-            legend.position = "bottom") +
+            legend.position = "inside",
+            legend.position.inside = c(0.75, 0.75)) +
 
       ylim(c(0, 1800)) +
-      scale_fill_manual(values=cbPalette)
+      scale_fill_manual(values=cbLEPalette) +
+      guides(fill=guide_legend(nrow=3))
   })
 
   # Plot: Coursera Learners ----------------------------------------------------
@@ -494,9 +504,11 @@ server <- function(input, output) {
            fill = "Target Audience",
            title = NULL) +
       ylim(c(0, 1200)) +
-      scale_fill_manual(values = c("#56B4E9", "#009E73", "#008080")) +
+      scale_fill_manual(values = cbLEPalette) +
       theme(text = element_text(size = 17, family = "Arial"),
-            legend.position = "bottom")
+            legend.position = "inside",
+            legend.position.inside = c(0.75, 0.75)) +
+      guides(fill=guide_legend(nrow=3))
   })
 
   # Plot: Leanpub Learners ----------------------------------------------------
@@ -513,9 +525,11 @@ server <- function(input, output) {
            fill = "Target Audience",
            title = NULL) +
       ylim(c(0, 40)) +
-      scale_fill_manual(values = c("#56B4E9", "#009E73", "#008080")) +
+      scale_fill_manual(values = cbLEPalette) +
       theme(text = element_text(size = 17, family = "Arial"),
-            legend.position = "bottom")
+            legend.position = "inside",
+            legend.position.inside = c(0.75, 0.75)) +
+      guides(fill=guide_legend(nrow=3))
   })
 
   # Plot: Learners by Launch Date ----------------------------------------------------
@@ -534,7 +548,7 @@ server <- function(input, output) {
            y = "Bookdown Views",
            color = "Target Audience",
            title = NULL) +
-      scale_color_manual(values=cbPalette) +
+      scale_color_manual(values=cbLEPalette, limits = c("Leadership", "New to data", "Software developers")) +
       ggrepel::geom_text_repel(aes(x = duration, y = webAndEnrollmentTotals, label = website), size = 6, vjust = - 1, na.rm = TRUE)
   })
 
@@ -548,6 +562,7 @@ server <- function(input, output) {
              merged_likely_rec = as.numeric(merged_likely_rec)) %>%
       ggplot(aes(merged_likely_rec)) +
       geom_bar(fill = "#28ae80") +
+      scale_x_discrete(breaks = c(1:10), labels= c(1:10), limits=factor(c(1:10))) +
       geom_text(stat = 'count', aes(label = ..count..), vjust = -0.4) +
       theme_classic() +
       theme(text = element_text(size = 17, family = "Arial")) +
@@ -559,10 +574,6 @@ server <- function(input, output) {
   output$plot_workshop_relevance <- renderPlot({
     itcr_slido_data() %>%
       clean_names() %>%
-      mutate(merged_likely_rec = if_else(is.na(how_likely_would_you_be_to_recommend_this_workshop),
-                                         how_likely_would_you_be_to_recommend_this_workshop_2,
-                                         how_likely_would_you_be_to_recommend_this_workshop),
-             merged_likely_rec = as.numeric(merged_likely_rec)) %>%
       filter(how_likely_are_you_to_use_what_you_learned_in_your_daily_work %in% c("Extremely likely",
                                                                                   "Likely",
                                                                                   "Not very likely",
@@ -644,7 +655,7 @@ server <- function(input, output) {
       geom_bar(position = "dodge", stat = "identity") +
       geom_text(aes(label = n), hjust = -0.2) +
       coord_flip() +
-      theme_minimal() +
+      theme_classic() +
       theme(strip.text.x = element_text(size = 6),
             legend.position="none",
             text = element_text(size = 17, family = "Arial"),
@@ -662,7 +673,7 @@ server <- function(input, output) {
       geom_bar(position="dodge", stat = "identity") +
       geom_text(aes(label = n), hjust = -0.2) +
       coord_flip() +
-      theme_minimal() +
+      theme_classic() +
       theme(text = element_text(size = 17, family = "Arial"),
             legend.position = "none",
             plot.margin = unit(c(.75,.5,.5,.5), "cm")) +
