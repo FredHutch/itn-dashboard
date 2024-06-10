@@ -389,7 +389,8 @@ server <- function(input, output) {
       theme_classic() +
       theme(text = element_text(size = 17, family = "Arial"),
             legend.position = "inside",
-            legend.position.inside = c(0.75,0.75)) +
+            legend.position.inside = c(0.75,0.75),
+            plot.margin = margin(1,1.1,1,1, "cm")) +
       labs(x = NULL,
            y = "Number of Visitors",
            fill = "Target Audience") +
@@ -411,8 +412,9 @@ server <- function(input, output) {
       scale_fill_manual(values=cbLEPalette) +
       theme_classic() +
       theme(legend.position = "inside",
-            legend.position.inside = c(0.75, 0.25),
-            text = element_text(size = 17, family = "Arial")) +
+            legend.position.inside = c(0.8, 0.25),
+            text = element_text(size = 17, family = "Arial"),
+            plot.margin = margin(1,1.15,1,1, "cm")) +
       labs(x = NULL,
            y = "Number of Learners") +
       guides(fill=guide_legend(nrow=3))
@@ -432,7 +434,7 @@ server <- function(input, output) {
       ggplot(aes(x = website, y = value, fill = target_audience)) +
       geom_bar(position = "dodge", stat = "identity") +
       geom_text(aes(label = round(value, 1), hjust = -0.2)) +
-      coord_flip() +
+      coord_flip(clip='off') +
       theme_classic() +
       labs(x = NULL,
            y = NULL,
@@ -442,7 +444,8 @@ server <- function(input, output) {
                                   "Reproducibility in Cancer Informatics", "Choosing Genomics Tools", "Computing for Cancer Informatics",
                                   "Documentation and Usability", "Advanced Reproducibility", "AI for Efficient Programming", "GitHub Automation for Scientists")) +
       theme(text = element_text(size = 17, family = "Arial"),
-            legend.position = "bottom") +
+            legend.position = "bottom",
+            plot.margin = margin(1,1.25,1,1, "cm")) +
       guides(fill=guide_legend(nrow=3))
   })
 
@@ -483,9 +486,8 @@ server <- function(input, output) {
       theme_classic() +
       theme(text = element_text(size = 17, family = "Arial"),
             legend.position = "inside",
-            legend.position.inside = c(0.75, 0.75)) +
-
-      ylim(c(0, 1800)) +
+            legend.position.inside = c(0.75, 0.75),
+            plot.margin = margin(1,1.1,1,1, "cm")) +
       scale_fill_manual(values=cbLEPalette) +
       guides(fill=guide_legend(nrow=3))
   })
@@ -497,7 +499,7 @@ server <- function(input, output) {
       ggplot(aes(x = reorder(website, -coursera_count), y = coursera_count, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
       geom_text(aes(label = coursera_count), hjust = -0.2, na.rm = TRUE) +
-      coord_flip() +
+      coord_flip(clip = "off") +
       theme_classic() +
       labs(x = NULL,
            y = "Coursera enrollments",
@@ -507,7 +509,8 @@ server <- function(input, output) {
       scale_fill_manual(values = cbLEPalette) +
       theme(text = element_text(size = 17, family = "Arial"),
             legend.position = "inside",
-            legend.position.inside = c(0.75, 0.75)) +
+            legend.position.inside = c(0.75, 0.75),
+            plot.margin = margin(1,1.1,1,1, "cm")) +
       guides(fill=guide_legend(nrow=3))
   })
 
@@ -518,7 +521,7 @@ server <- function(input, output) {
       ggplot(aes(x = reorder(website, -leanpub_count), y = leanpub_count, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
       geom_text(aes(label = leanpub_count), hjust = -0.2, na.rm = TRUE) +
-      coord_flip() +
+      coord_flip(clip = "off") +
       theme_classic() +
       labs(x = NULL,
            y = "Leanpub enrollments",
@@ -528,7 +531,8 @@ server <- function(input, output) {
       scale_fill_manual(values = cbLEPalette) +
       theme(text = element_text(size = 17, family = "Arial"),
             legend.position = "inside",
-            legend.position.inside = c(0.75, 0.75)) +
+            legend.position.inside = c(0.75, 0.75),
+            plot.margin = margin(1,1.1,1,1, "cm")) +
       guides(fill=guide_legend(nrow=3))
   })
 
