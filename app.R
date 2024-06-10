@@ -548,7 +548,7 @@ server <- function(input, output) {
             panel.border = element_rect("black", fill=NA, linewidth=0.5),
             legend.position = "bottom",
             text = element_text(size = 17, family = "Arial")) +
-      labs(x = "How long the course has been out",
+      labs(x = "How long the course has been out (days)",
            y = "Bookdown Views",
            color = "Target Audience",
            title = NULL) +
