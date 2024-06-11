@@ -553,8 +553,20 @@ server <- function(input, output) {
            color = "Target Audience",
            title = NULL) +
       scale_color_manual(values=cbLEPalette, limits = c("Leadership", "New to data", "Software developers")) +
-      ggrepel::geom_text_repel(aes(x = duration, y = webAndEnrollmentTotals, label = website), size = 6, vjust = - 1, na.rm = TRUE)
-  })
+      ggrepel::geom_text_repel(
+        aes(label = website),
+        family = "Poppins",
+        size = 3,
+        min.segment.length = 0, 
+        seed = 42, 
+        box.padding = 0.5,
+        max.overlaps = Inf,
+        arrow = arrow(length = unit(0.010, "npc")),
+        nudge_x = .15,
+        nudge_y = .5,
+        color = "black"
+      )
+      })
 
   # Plot: Workshop Recommendation ----------------------------------------------------
   output$plot_workshop_recommendation <- renderPlot({
