@@ -384,13 +384,13 @@ server <- function(input, output) {
                               "Developing_WDL_Workflows"))) %>%
       ggplot(aes(x = reorder(website, -totalUsers), y = totalUsers, fill = target_audience)) +
       geom_bar(stat = "identity") +
-      geom_text(aes(label = totalUsers), hjust = -0.2) +
-      coord_flip(clip="off") +
+      geom_text(aes(label = totalUsers), hjust = 1.1,
+                colour = "lightgray") +
       theme_classic() +
+      coord_flip() +
       theme(text = element_text(size = 17, family = "Arial"),
             legend.position = "inside",
-            legend.position.inside = c(0.75,0.75),
-            plot.margin = margin(1,1.1,1,1, "cm")) +
+            legend.position.inside = c(0.75,0.75)) +
       labs(x = NULL,
            y = "Number of Visitors",
            fill = "Target Audience") +
@@ -407,14 +407,14 @@ server <- function(input, output) {
       ggplot(aes(x = fct_reorder(course_name, number_of_learners),
                  y = number_of_learners, fill = `Target Audience`)) +
       geom_col() +
-      geom_text(aes(label = number_of_learners), hjust = -0.1) +
-      coord_flip(clip = "off") +
+      geom_text(aes(label = number_of_learners), hjust = 1.1,
+                colour = "lightgray") +
+      coord_flip() +
       scale_fill_manual(values=cbLEPalette) +
       theme_classic() +
       theme(legend.position = "inside",
-            legend.position.inside = c(0.8, 0.25),
-            text = element_text(size = 17, family = "Arial"),
-            plot.margin = margin(1,1.15,1,1, "cm")) +
+            legend.position.inside = c(0.75, 0.25),
+            text = element_text(size = 17, family = "Arial")) +
       labs(x = NULL,
            y = "Number of Learners") +
       guides(fill=guide_legend(nrow=3))
@@ -433,8 +433,9 @@ server <- function(input, output) {
              metric_name == input$metric) %>%
       ggplot(aes(x = website, y = value, fill = target_audience)) +
       geom_bar(position = "dodge", stat = "identity") +
-      geom_text(aes(label = round(value, 1), hjust = -0.2)) +
-      coord_flip(clip='off') +
+      geom_text(aes(label = round(value, 1), hjust = 1.1),
+                colour = "lightgray") +
+      coord_flip() +
       theme_classic() +
       labs(x = NULL,
            y = NULL,
@@ -444,8 +445,7 @@ server <- function(input, output) {
                                   "Reproducibility in Cancer Informatics", "Choosing Genomics Tools", "Computing for Cancer Informatics",
                                   "Documentation and Usability", "Advanced Reproducibility", "AI for Efficient Programming", "GitHub Automation for Scientists")) +
       theme(text = element_text(size = 17, family = "Arial"),
-            legend.position = "bottom",
-            plot.margin = margin(1,1.25,1,1, "cm")) +
+            legend.position = "bottom") +
       guides(fill=guide_legend(nrow=3))
   })
 
@@ -456,7 +456,8 @@ server <- function(input, output) {
       summarize(total_learners = sum(learner_count, na.rm = TRUE)) %>%
       ggplot(aes(x = reorder(modality, -total_learners), y = total_learners, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
-      geom_text(aes(label = total_learners), hjust = -0.2, na.rm = TRUE) +
+      geom_text(aes(label = total_learners), hjust = 1.05, na.rm = TRUE,
+                colour = "lightgray") +
       coord_flip() +
       theme_classic() +
       theme(legend.position = "none",
@@ -477,17 +478,17 @@ server <- function(input, output) {
       filter(!(website %in% c("widget", "DaSL Collection", "Developing_WDL_Workflows", "proof"))) %>%
       ggplot(aes(x = reorder(website, -total_learners), y = total_learners, fill = target_audience)) +
       geom_bar(stat = "identity") +
-      geom_text(aes(label = total_learners), hjust = -0.2, na.rm = TRUE) +
+      geom_text(aes(label = total_learners), hjust = 1.1, na.rm = TRUE,
+                colour="lightgray") +
       labs(x = NULL,
            y = "Total Learners by Course",
            fill = "Target Audience",
            title = NULL) +
-      coord_flip(clip='off') +
+      coord_flip() +
       theme_classic() +
       theme(text = element_text(size = 17, family = "Arial"),
             legend.position = "inside",
-            legend.position.inside = c(0.75, 0.75),
-            plot.margin = margin(1,1.1,1,1, "cm")) +
+            legend.position.inside = c(0.75, 0.75)) +
       scale_fill_manual(values=cbLEPalette) +
       guides(fill=guide_legend(nrow=3))
   })
@@ -498,8 +499,9 @@ server <- function(input, output) {
       filter(coursera_count > 0) %>%
       ggplot(aes(x = reorder(website, -coursera_count), y = coursera_count, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
-      geom_text(aes(label = coursera_count), hjust = -0.2, na.rm = TRUE) +
-      coord_flip(clip = "off") +
+      geom_text(aes(label = coursera_count), hjust = 1.1, na.rm = TRUE,
+                colour = "lightgray") +
+      coord_flip() +
       theme_classic() +
       labs(x = NULL,
            y = "Coursera enrollments",
@@ -509,8 +511,7 @@ server <- function(input, output) {
       scale_fill_manual(values = cbLEPalette) +
       theme(text = element_text(size = 17, family = "Arial"),
             legend.position = "inside",
-            legend.position.inside = c(0.75, 0.75),
-            plot.margin = margin(1,1.1,1,1, "cm")) +
+            legend.position.inside = c(0.75, 0.75)) +
       guides(fill=guide_legend(nrow=3))
   })
 
@@ -520,8 +521,9 @@ server <- function(input, output) {
       filter(leanpub_count > 0) %>%
       ggplot(aes(x = reorder(website, -leanpub_count), y = leanpub_count, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
-      geom_text(aes(label = leanpub_count), hjust = -0.2, na.rm = TRUE) +
-      coord_flip(clip = "off") +
+      geom_text(aes(label = leanpub_count), hjust = 1.1, na.rm = TRUE,
+                colour = "lightgray") +
+      coord_flip() +
       theme_classic() +
       labs(x = NULL,
            y = "Leanpub enrollments",
@@ -531,8 +533,7 @@ server <- function(input, output) {
       scale_fill_manual(values = cbLEPalette) +
       theme(text = element_text(size = 17, family = "Arial"),
             legend.position = "inside",
-            legend.position.inside = c(0.75, 0.75),
-            plot.margin = margin(1,1.1,1,1, "cm")) +
+            legend.position.inside = c(0.75, 0.75)) +
       guides(fill=guide_legend(nrow=3))
   })
 
@@ -579,7 +580,8 @@ server <- function(input, output) {
       ggplot(aes(merged_likely_rec)) +
       geom_bar(fill = "#28ae80") +
       scale_x_discrete(breaks = c(1:10), labels= c(1:10), limits=factor(c(1:10))) +
-      geom_text(stat = 'count', aes(label = ..count..), vjust = -0.4) +
+      geom_text(stat = 'count', aes(label = ..count..), vjust = 1.4,
+                colour = "lightgray") +
       theme_classic() +
       theme(text = element_text(size = 17, family = "Arial")) +
       labs(y = "Count",
@@ -603,7 +605,8 @@ server <- function(input, output) {
                                                                                                "Extremely likely"))) %>%
       ggplot(aes(x = how_likely_are_you_to_use_what_you_learned_in_your_daily_work)) +
       geom_bar(stat = "count", fill = "#28ae80") +
-      geom_text(stat = 'count', aes(label = ..count..), vjust = -0.4) +
+      geom_text(stat = 'count', aes(label = ..count..), vjust = 1.4,
+                colour = "lightgray") +
       theme_classic() +
       theme(text = element_text(size = 17, family = "Arial")) +
       labs(x = NULL,
@@ -616,7 +619,8 @@ server <- function(input, output) {
     career_stage_processed() %>%
       ggplot(aes(x = reorder(Stage, -count), y = count, fill = Trainee)) +
       geom_bar(stat = "identity") +
-      geom_text(aes(label = count), hjust = -0.2) +
+      geom_text(aes(label = count), hjust = 1.2,
+                colour ="lightgray") +
       coord_flip() +
       xlab(NULL) +
       ylab("Number of Registrants") +
@@ -669,7 +673,8 @@ server <- function(input, output) {
       count(Category) %>%
       ggplot(aes(y = n, x = reorder(Category,-n), fill = Category)) +
       geom_bar(position = "dodge", stat = "identity") +
-      geom_text(aes(label = n), hjust = -0.2) +
+      geom_text(aes(label = n), hjust = 1.1,
+                colour = "white") +
       coord_flip() +
       theme_classic() +
       theme(strip.text.x = element_text(size = 6),
@@ -687,7 +692,8 @@ server <- function(input, output) {
       count(Category) %>%
       ggplot(aes(y =n, x=reorder(Category, -n), fill = Category )) +
       geom_bar(position="dodge", stat = "identity") +
-      geom_text(aes(label = n), hjust = -0.2) +
+      geom_text(aes(label = n), hjust = 1.1,
+                colour = "white") +
       coord_flip() +
       theme_classic() +
       theme(text = element_text(size = 17, family = "Arial"),
