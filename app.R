@@ -557,7 +557,7 @@ server <- function(input, output) {
       ggrepel::geom_text_repel(
         aes(label = website),
         family = "Poppins",
-        size = 3,
+        size = 3.5,
         min.segment.length = 0, 
         seed = 42, 
         box.padding = 0.5,
