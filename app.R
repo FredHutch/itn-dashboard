@@ -719,9 +719,10 @@ server <- function(input, output) {
       summarize(n= n()) %>%
       ggplot(aes(y = n, x = reorder(Category,-n, sum), fill = ITN_ITCR_or_external)) +
       geom_bar(position = "stack", stat = "identity") +
-      geom_text(aes(label = after_stat(y), group = Category), hjust = -0.2,
-                stat = 'summary', fun = sum) +
-      coord_flip(clip = "off") +
+      geom_text(aes(label = after_stat(y), group = Category), hjust = 1.1,
+                stat = 'summary', fun = sum,
+                colour = "white") +
+      coord_flip() +
       theme_classic() +
       labs(fill = "ITCR Collab?") +
       theme(strip.text.x = element_text(size = 6),
