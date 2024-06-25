@@ -384,8 +384,8 @@ server <- function(input, output) {
                               "Developing_WDL_Workflows"))) %>%
       ggplot(aes(x = reorder(website, -totalUsers), y = totalUsers, fill = target_audience)) +
       geom_bar(stat = "identity") +
-      geom_text(aes(label = totalUsers), hjust = 1.1,
-                colour = "lightgray") +
+      geom_text(aes(label = totalUsers), hjust = 1.05,
+                colour = "lightgray", fontface = "bold") +
       theme_classic() +
       coord_flip() +
       theme(text = element_text(size = 17, family = "Arial"),
@@ -407,8 +407,8 @@ server <- function(input, output) {
       ggplot(aes(x = fct_reorder(course_name, number_of_learners),
                  y = number_of_learners, fill = `Target Audience`)) +
       geom_col() +
-      geom_text(aes(label = number_of_learners), hjust = 1.1,
-                colour = "lightgray") +
+      geom_text(aes(label = number_of_learners), hjust = 1.05,
+                colour = "lightgray", fontface = "bold") +
       coord_flip() +
       scale_fill_manual(values=cbLEPalette) +
       theme_classic() +
@@ -433,8 +433,8 @@ server <- function(input, output) {
              metric_name == input$metric) %>%
       ggplot(aes(x = website, y = value, fill = target_audience)) +
       geom_bar(position = "dodge", stat = "identity") +
-      geom_text(aes(label = round(value, 1), hjust = 1.1),
-                colour = "lightgray") +
+      geom_text(aes(label = round(value, 1), hjust = 1.05),
+                colour = "lightgray", fontface = "bold") +
       coord_flip() +
       theme_classic() +
       labs(x = NULL,
@@ -456,8 +456,8 @@ server <- function(input, output) {
       summarize(total_learners = sum(learner_count, na.rm = TRUE)) %>%
       ggplot(aes(x = reorder(modality, -total_learners), y = total_learners, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
-      geom_text(aes(label = total_learners), hjust = 1.05, na.rm = TRUE,
-                colour = "lightgray") +
+      geom_text(aes(label = total_learners), hjust = 1.055, na.rm = TRUE,
+                colour = "lightgray", fontface = "bold") +
       coord_flip() +
       theme_classic() +
       theme(legend.position = "none",
@@ -478,8 +478,8 @@ server <- function(input, output) {
       filter(!(website %in% c("widget", "DaSL Collection", "Developing_WDL_Workflows", "proof"))) %>%
       ggplot(aes(x = reorder(website, -total_learners), y = total_learners, fill = target_audience)) +
       geom_bar(stat = "identity") +
-      geom_text(aes(label = total_learners), hjust = 1.1, na.rm = TRUE,
-                colour="lightgray") +
+      geom_text(aes(label = total_learners), hjust = 1.05, na.rm = TRUE,
+                colour="lightgray", fontface = "bold") +
       labs(x = NULL,
            y = "Total Learners by Course",
            fill = "Target Audience",
@@ -499,8 +499,8 @@ server <- function(input, output) {
       filter(coursera_count > 0) %>%
       ggplot(aes(x = reorder(website, -coursera_count), y = coursera_count, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
-      geom_text(aes(label = coursera_count), hjust = 1.1, na.rm = TRUE,
-                colour = "lightgray") +
+      geom_text(aes(label = coursera_count), hjust = 1.05, na.rm = TRUE,
+                colour = "lightgray", fontface = "bold") +
       coord_flip() +
       theme_classic() +
       labs(x = NULL,
@@ -521,8 +521,8 @@ server <- function(input, output) {
       filter(leanpub_count > 0) %>%
       ggplot(aes(x = reorder(website, -leanpub_count), y = leanpub_count, fill = target_audience)) +
       geom_bar(stat = "identity", na.rm = TRUE) +
-      geom_text(aes(label = leanpub_count), hjust = 1.1, na.rm = TRUE,
-                colour = "lightgray") +
+      geom_text(aes(label = leanpub_count), hjust = 1.05, na.rm = TRUE,
+                colour = "lightgray", fontface = "bold") +
       coord_flip() +
       theme_classic() +
       labs(x = NULL,
@@ -581,7 +581,7 @@ server <- function(input, output) {
       geom_bar(fill = "#28ae80") +
       scale_x_discrete(breaks = c(1:10), labels= c(1:10), limits=factor(c(1:10))) +
       geom_text(stat = 'count', aes(label = ..count..), vjust = 1.4,
-                colour = "lightgray") +
+                colour = "lightgray", fontface = "bold") +
       theme_classic() +
       theme(text = element_text(size = 17, family = "Arial")) +
       labs(y = "Count",
@@ -606,7 +606,7 @@ server <- function(input, output) {
       ggplot(aes(x = how_likely_are_you_to_use_what_you_learned_in_your_daily_work)) +
       geom_bar(stat = "count", fill = "#28ae80") +
       geom_text(stat = 'count', aes(label = ..count..), vjust = 1.4,
-                colour = "lightgray") +
+                colour = "lightgray", fontface = "bold") +
       theme_classic() +
       theme(text = element_text(size = 17, family = "Arial")) +
       labs(x = NULL,
@@ -620,7 +620,7 @@ server <- function(input, output) {
       ggplot(aes(x = reorder(Stage, -count), y = count, fill = Trainee)) +
       geom_bar(stat = "identity") +
       geom_text(aes(label = count), hjust = 1.2,
-                colour ="lightgray") +
+                colour ="lightgray", fontface = "bold") +
       coord_flip() +
       xlab(NULL) +
       ylab("Number of Registrants") +
@@ -673,8 +673,8 @@ server <- function(input, output) {
       count(Category) %>%
       ggplot(aes(y = n, x = reorder(Category,-n), fill = Category)) +
       geom_bar(position = "dodge", stat = "identity") +
-      geom_text(aes(label = n), hjust = 1.1,
-                colour = "white") +
+      geom_text(aes(label = n), hjust = 1.05,
+                colour = "white", fontface = "bold") +
       coord_flip() +
       theme_classic() +
       theme(strip.text.x = element_text(size = 6),
@@ -692,8 +692,8 @@ server <- function(input, output) {
       count(Category) %>%
       ggplot(aes(y =n, x=reorder(Category, -n), fill = Category )) +
       geom_bar(position="dodge", stat = "identity") +
-      geom_text(aes(label = n), hjust = 1.1,
-                colour = "white") +
+      geom_text(aes(label = n), hjust = 1.05,
+                colour = "white", fontface = "bold") +
       coord_flip() +
       theme_classic() +
       theme(text = element_text(size = 17, family = "Arial"),
