@@ -168,7 +168,8 @@ ui <- dashboardPage(
               fluidRow(
                 box(title = "Monthly CRAN Downloads",
                     width = 12,
-                    plotOutput("plot_monthly_cran_download"))
+                    plotOutput("plot_monthly_cran_download"),
+                    footer = "*Dashed vertical lines denote when software was published on CRAN.")
               )
       ),
       # Collaborations Tab ----------------------------------------------------
