@@ -27,7 +27,7 @@ cbLEPalette <-c("#56B4E9", "#009E73", "#008080")
 
 xlabel_view <- c(rep(c("black", "transparent", "transparent", "transparent"), 41), "black", "transparent") #166 rows
 #cc <- rev(c("#fde725", "#addc30", "#5ec962", "#28ae80", "#21918c", "#2c728e", "#3b528b", "#472d7b", "#440154"))
-viridis_cc <- c("#440154", "#2c728e", "#28ae80", "#addc30")
+viridis_cc <- c("#440154", "#2c728e", "#fde725", "#28ae80", "#addc30")
 
 # Wordcloud
 ud_model <- udpipe::udpipe_load_model("wordcloud-model.udpipe")
@@ -155,7 +155,8 @@ ui <- dashboardPage(
               fluidRow(
                 box(title = "Monthly CRAN Downloads",
                     width = 12,
-                    plotOutput("plot_monthly_cran_download"))
+                    plotOutput("plot_monthly_cran_download"),
+                    footer = "*Dashed vertical lines denote when software was published on CRAN.")
               )
       ),
       # Collaborations Tab ----------------------------------------------------
@@ -665,6 +666,7 @@ server <- function(input, output) {
       geom_vline(aes(xintercept = "2019-05"), linetype='dashed', color = '#addc30') + #text2speech published date
       geom_vline(aes(xintercept="2022-02"), linetype='dashed', color = '#28ae80') + #ottrpal published date
       geom_vline(aes(xintercept="2023-07"), linetype='dashed', color = '#2c728e') + #conrad published date
+      geom_vline(aes(xintercept="2024-02"), linetype="dashed", color = '#fde725') + #metricminer published date
       theme(axis.text.x = element_text(angle = 90),
             legend.position = "bottom") + #clean up x-axis labels
       labs(x = NULL,
