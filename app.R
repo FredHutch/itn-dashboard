@@ -458,6 +458,7 @@ server <- function(input, output) {
   # Plot: Course Engagement by Target Audience ----------------------------------------------------
   output$plot_engagement_target <- renderPlot({
     itcr_course_data_long() %>%
+      filter(!(website %in% c("widget", "DaSL Collection", "Developing_WDL_Workflows", "proof"))) %>%
       group_by(modality, target_audience) %>%
       summarize(total_learners = sum(learner_count, na.rm = TRUE)) %>%
       ggplot(aes(x = reorder(modality, -total_learners), y = total_learners, fill = target_audience)) +
@@ -471,10 +472,10 @@ server <- function(input, output) {
       labs(x = NULL,
            y = "Visitors/Enrollees",
            fill = "Target Audience") +
-      ylim(c(0, 4200)) +
-      facet_wrap(~target_audience) +
-      scale_fill_manual(values=cbPalette)
-  })
+      #ylim(c(0, 4200)) +
+      facet_wrap(~target_audience, nrow=3) +
+      scale_fill_manual(values=cbLEPalette, limits = c("Leadership", "New to data", "Software developers"))
+  })    
 
   # Plot: Learner by Course ----------------------------------------------------
   output$plot_learner_course <- renderPlot({
