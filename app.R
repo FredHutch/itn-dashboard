@@ -166,6 +166,11 @@ ui <- dashboardPage(
                     plotOutput("plot_collaboration_all")),
                 box(title = "ITCR-Only Collaborations",
                     plotOutput("plot_collaboration_itcr"))
+              ),
+              #Second Row
+              fluidRow(
+                box(title = "All Collaborations: Specifying Affiliation",
+                    plotOutput("plot_collaboration_all_color"))
               )
       ),
       # About Tab ----------------------------------------------------
@@ -567,7 +572,7 @@ server <- function(input, output) {
         nudge_y = .5,
         color = "black"
       )
-      })
+  })
 
   # Plot: Workshop Recommendation ----------------------------------------------------
   output$plot_workshop_recommendation <- renderPlot({
@@ -701,6 +706,39 @@ server <- function(input, output) {
             plot.margin = unit(c(.75,.5,.5,.5), "cm")) +
       xlab(NULL) +
       ylab(NULL)
+  })
+  
+  # Plot: All Collaborations colored by ITCR or not ------------------------------
+  output$plot_collaboration_all_color <- renderPlot({
+    collabs_processed() %>%
+      group_by(Category, ITN_ITCR_or_external) %>%
+      mutate(ITN_ITCR_or_external = 
+               factor(case_when(ITN_ITCR_or_external == "external" ~ "Not ITCR",
+                                ITN_ITCR_or_external == "external (was after leaving)" ~ "Not ITCR",
+                                ITN_ITCR_or_external == "external NIH/NCI intermural" ~ "Not ITCR",
+                                ITN_ITCR_or_external == "ITCR" ~ "ITCR",
+                                ITN_ITCR_or_external == "ITN" ~ "ITN",
+                                ITN_ITCR_or_external == "NCI" ~ "Not ITCR",
+                                ITN_ITCR_or_external == "neither" ~ "Not ITCR",
+                                ITN_ITCR_or_external == "NIH" ~ "Not ITCR"),
+                      levels = rev(c("ITCR", "Not ITCR", "ITN")))) %>%
+      summarize(n= n()) %>%
+      ggplot(aes(y = n, x = reorder(Category,-n, sum), fill = ITN_ITCR_or_external)) +
+      geom_bar(position = "stack", stat = "identity") +
+      geom_text(aes(label = after_stat(y), group = Category), hjust = 1.05,
+                stat = 'summary', fun = sum,
+                colour = "white", fontface = "bold") +
+      coord_flip() +
+      theme_classic() +
+      labs(fill = "ITCR Collab?") +
+      theme(strip.text.x = element_text(size = 6),
+            legend.position="inside",
+            legend.position.inside = c(0.75, 0.75),
+            text = element_text(size = 17, family = "Arial"),
+            plot.margin = unit(c(.75,.5,.5,.5), "cm")) + 
+      xlab(NULL) +
+      ylab(NULL) +
+      scale_fill_discrete(na.translate = F)
   })
 
 
