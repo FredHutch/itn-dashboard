@@ -41,7 +41,7 @@ itcr_stats <- itcr_stats_raw$metrics
 
 # Filter out Google Analytics that aren't ITCR courses
 not_itcr <- c("hutchdatasci", "whoiswho", "MMDS", "FH Cluster 101", "DaSL Collection",  "proof",
-              "Developing_WDL_Workflows", "ITN Website", "OTTR website", "metricminer.org", "widget")
+              "Developing_WDL_Workflows", "ITN Website", "OTTR website", "metricminer.org", "widget", "Using Leanpub Course")
 
 # itcr_ga_metric_data.csv ----------------------------------------------------
 itcr_ga_metric_data <- fhdsl_stats %>%

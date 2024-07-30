@@ -387,7 +387,7 @@ server <- function(input, output) {
       # Filter out ITN Website since it is not an "Educational Resource"
       filter(!(website %in% c("ITN Website", "widget", "DaSL Collection",
                               "proof", "metricminer.org", "OTTR website",
-                              "Developing_WDL_Workflows"))) %>%
+                              "Developing_WDL_Workflows", "Using Leanpub Course"))) %>%
       ggplot(aes(x = reorder(website, -totalUsers), y = totalUsers, fill = target_audience)) +
       geom_bar(stat = "identity") +
       geom_text(aes(label = totalUsers), hjust = 1.05,
@@ -458,7 +458,7 @@ server <- function(input, output) {
   # Plot: Course Engagement by Target Audience ----------------------------------------------------
   output$plot_engagement_target <- renderPlot({
     itcr_course_data_long() %>%
-      filter(!(website %in% c("widget", "DaSL Collection", "Developing_WDL_Workflows", "proof"))) %>%
+      filter(!(website %in% c("widget", "DaSL Collection", "Developing_WDL_Workflows", "proof", "Using Leanpub Course"))) %>%
       group_by(modality, target_audience) %>%
       summarize(total_learners = sum(learner_count, na.rm = TRUE)) %>%
       ggplot(aes(x = reorder(modality, -total_learners), y = total_learners, fill = target_audience)) +
@@ -482,7 +482,7 @@ server <- function(input, output) {
     itcr_course_data_long() %>%
       group_by(website, target_audience) %>%
       summarize(total_learners = sum(learner_count, na.rm = TRUE)) %>%
-      filter(!(website %in% c("widget", "DaSL Collection", "Developing_WDL_Workflows", "proof"))) %>%
+      filter(!(website %in% c("widget", "DaSL Collection", "Developing_WDL_Workflows", "proof", "Using Leanpub Course"))) %>%
       ggplot(aes(x = reorder(website, -total_learners), y = total_learners, fill = target_audience)) +
       geom_bar(stat = "identity") +
       geom_text(aes(label = total_learners), hjust = 1.05, na.rm = TRUE,
