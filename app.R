@@ -32,6 +32,12 @@ viridis_cc <- c("#440154", "#2c728e", "#fde725", "#28ae80", "#addc30")
 # Wordcloud
 ud_model <- udpipe::udpipe_load_model("wordcloud-model.udpipe")
 
+# Functions
+
+coacross <- function(...) {
+  coalesce(!!!across(...))
+}
+
 ui <- dashboardPage(
   # Dashboard Header ----------------------------------------------------
   dashboardHeader(
@@ -121,7 +127,8 @@ ui <- dashboardPage(
               # First Row
               fluidRow(
                 box(title = "Workshop Recommendation",
-                    plotOutput("plot_workshop_recommendation")),
+                    plotOutput("plot_workshop_recommendation"),
+                    footer = textOutput("percent_rec")),
 
                 box(title = "Workshop Relevance",
                     plotOutput("plot_workshop_relevance"))
@@ -272,6 +279,26 @@ server <- function(input, output) {
                                         NULL,
                                         "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/itcr_slido_data.csv",
                                         readr::read_csv)
+  
+  itcr_slido_data_processed <- reactive({  
+    itcr_slido_data() %>% clean_names() %>% 
+    mutate(participant = coalesce(user_id, participant_id)) %>%
+    filter(!is.na(participant))
+  })
+  
+  itcr_slido_data_rec <- reactive({
+    itcr_slido_data_processed() %>% 
+      filter(!str_detect(event_name, "Pre")) %>% #remove pre workshop survey that doesn't ask the relevant question
+      select(matches("recommend_")) %>% 
+      mutate(merged_likely_rec = as.integer(coacross(everything())))
+  })
+  
+  
+  output$percent_rec <- renderText({ 
+    paste0(round(sum(itcr_slido_data_rec()$merged_likely_rec >= 8, na.rm = TRUE) / sum(!is.na(itcr_slido_data_rec()$merged_likely_rec)) * 100, digits=1),  
+           " % of responses rated their recommendation likelihood as an 8 or higher.")
+  })
+  
 
   # Data: Workshop Registrant Career Stage ----------------------------------------------------
   career_stage_counts_raw <- reactiveFileReader(time_interval,
@@ -576,24 +603,36 @@ server <- function(input, output) {
       )
   })
 
-  # Plot: Workshop Recommendation ----------------------------------------------------
+  # Plot: Pre- and post- workshop confidence (pooled) ----------------------------------------
+  
+  
+  # Plot: Pre- and post- workshop confidence (workshop specific) ----------------------------
+  
+  
+  # Plot: Recommendation likelihood ------------------------------------------------------
+  
   output$plot_workshop_recommendation <- renderPlot({
-    itcr_slido_data() %>%
-      clean_names() %>%
-      mutate(merged_likely_rec = if_else(is.na(how_likely_would_you_be_to_recommend_this_workshop),
-                                         how_likely_would_you_be_to_recommend_this_workshop_2,
-                                         how_likely_would_you_be_to_recommend_this_workshop),
-             merged_likely_rec = as.numeric(merged_likely_rec)) %>%
+    itcr_slido_data_processed() %>%
+      filter(!str_detect(event_name, "Pre")) %>% #remove pre workshop survey that doesn't ask the relevant question
+      select(matches("recommend_")) %>% 
+      mutate(merged_likely_rec = as.integer(coacross(everything()))) %>%
       ggplot(aes(merged_likely_rec)) +
       geom_bar(fill = "#28ae80") +
-      scale_x_discrete(breaks = c(1:10), labels= c(1:10), limits=factor(c(1:10))) +
-      geom_text(stat = 'count', aes(label = ..count..), vjust = 1.4,
-                colour = "lightgray", fontface = "bold") +
       theme_classic() +
+      scale_x_continuous(breaks= c(1:10), labels=c(1:10), limits=c(1,10.5)) +
+      coord_cartesian(clip="off") +
+      geom_text(stat = "count", aes(label = after_stat(count)), vjust= 1.4,
+                colour = "lightgray", fontface = "bold") +
       theme(text = element_text(size = 17, family = "Arial")) +
       labs(y = "Count",
            x = "Rating")
   })
+  
+  #TODO: Should I add a note under the plot about percentage of responses that are 8 or above!? I think yes.
+      
+  # Plot: Positive impact likelihood ---------------------------------------------------
+  
+
 
   # Plot: Workshop Relevance ----------------------------------------------------
   output$plot_workshop_relevance <- renderPlot({
