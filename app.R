@@ -4,6 +4,7 @@ library(shinydashboard)
 
 library(tidyverse)
 library(janitor)
+library(grid)
 
 library(udpipe)
 library(wordcloud)
@@ -126,7 +127,7 @@ ui <- dashboardPage(
       tabItem(tabName = "tab_workshops",
               # First Row
               fluidRow(
-                box(title = "Workshop Recommendation",
+                box(title = "Workshop Recommendation Likelihood",
                     plotOutput("plot_workshop_recommendation"),
                     footer = textOutput("percent_rec")),
 
@@ -135,11 +136,18 @@ ui <- dashboardPage(
               ),
               # Second Row
               fluidRow(
+                box(title = "Change in confidence on workshop topic(s)",
+                    plotOutput("plot_workshop_confidence_pooled")),
+                box(title = "Change in confidence for specific workshops",
+                    plotOutput("plot_workshop_confidence"))
+              ),
+              # Third Row
+              fluidRow(
                 box(title = "Workshop Registrant Career Stage",
                     width = 12,
                     plotOutput("plot_workshop_career_stage"))
               ),
-              # Third Row
+              # Second Row
               fluidRow(
                 box(title = "Workshop Review: What Did You Like Most?",
                     plotOutput("plot_workshop_review")),
@@ -305,20 +313,29 @@ server <- function(input, output) {
                                                 NULL,
                                                 "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit?usp=sharing",
                                                 googlesheets4::read_sheet,
-                                                range = "Copy of Workshop attendee type")
+                                                sheet = "Workshop attendee type totals")
+  
+  # This data is manually curated and does NOT automatically update
+  #This googlesheet has the workshop name in the first column and has counts for a specific career stage in each column.
+  #The final row of the google sheet is the total (column sum)
 
   career_stage_counts_summed <- reactive({
-    tmp <- career_stage_counts_raw() %>%
-      select(-1) %>%
-      slice(1:(n() - 1))
+    #tmp <- career_stage_counts_raw() %>%
+      #select(-1) %>% #drop the first column
+      #slice(1:(n() - 1)) #drop the last row
 
-    colSums(tmp)
+    #colSums(tmp) #colSum to get the values that were in the last row....
+    
+    if(tolower(data %>% slice(n()) %>% select(1)) == "total"){
+      t(data %>% slice(n()) %>% select(-1))
+    }
+    
   })
 
   career_stage_processed <- reactive({
     career_stage_processed <- data.frame(
-      Stage = names(career_stage_counts_summed()),
-      count = as.numeric(career_stage_counts_summed()),
+      Stage = rownames(career_stage_counts_summed()),
+      count = as.numeric(career_stage_counts_summed()[,1]),
       stringsAsFactors = FALSE
     )
 
@@ -604,10 +621,53 @@ server <- function(input, output) {
   })
 
   # Plot: Pre- and post- workshop confidence (pooled) ----------------------------------------
-  
+  output$plot_workshop_confidence_pooled <- renderPlot({
+    rbind(
+      itcr_slido_data_processed() %>%  
+        filter(!str_detect(event_name, "Q2-NIH_")) %>%
+        select(event_name, contains("confident")) %>%
+        pivot_longer(contains("confident"), values_to = "value", names_to = "question") %>%
+        mutate(pre_post = if_else(grepl("now", question), "post", "pre")) %>% 
+        filter(str_length(value) <= 2) %>% #filter out the ones that are phrases and not numbers
+        filter(!str_detect(event_name, "GLBIO")) %>% #max ratings of 5 so filter out
+        select(value, pre_post),
+      itcr_slido_data_processed() %>%
+        filter(event_name == "Q2-NIH_PreSurvey") %>%
+        select(contains("confident")) %>% 
+        pivot_longer(everything(), values_to = "value", names_to = "question") %>%
+        mutate(pre_post = "pre") %>%
+        select(value, pre_post),
+      itcr_slido_data_processed() %>%
+        filter(str_detect(event_name, "Q2-NIH_") & event_name != "Q2-NIH_PreSurvey") %>%
+        select(contains("confident")) %>%
+        pivot_longer(everything(), values_to = "value", names_to = "question") %>%
+        mutate(pre_post = "post") %>%
+        select(value, pre_post)
+    ) %>% 
+      drop_na() %>%
+      mutate(value = as.integer(value),
+             pre_post = factor(pre_post, levels = c("pre", "post"))
+            ) %>%
+      ggplot(aes(x = value, y=pre_post, fill=pre_post)) +
+      geom_boxplot(outliers = FALSE) +
+      geom_jitter(aes(fill=pre_post), height=0.1, width=0.35, alpha=0.4, size=1.5, shape=21, color="black", stroke=1.5) +
+      theme_bw() + theme(panel.background = element_blank()) +
+      theme(legend.position = "bottom") +
+      xlab("Confidence Rank") + scale_x_continuous(breaks = 1:10, labels = 1:10) +
+      ylab("") +
+      ggtitle("How confident do you feel about ...") +
+      scale_fill_discrete(name = "Pre or post workshop?") +
+      coord_cartesian(clip = 'off') +
+      annotation_custom(textGrob("Most\nConfident", gp=gpar(fontsize=8, fontface = "bold")),xmin=10,xmax=10,ymin=0.1,ymax=0.1) +
+      annotation_custom(textGrob("Least\nConfident", gp=gpar(fontsize=8, fontface= "bold")),xmin=1,xmax=1,ymin=0.1,ymax=0.1) +
+      theme(axis.text.y=element_blank(),
+            axis.ticks.y=element_blank())
+  })
   
   # Plot: Pre- and post- workshop confidence (workshop specific) ----------------------------
-  
+  output$plot_workshop_confidence <- renderPlot({
+    
+  })
   
   # Plot: Recommendation likelihood ------------------------------------------------------
   
@@ -619,47 +679,46 @@ server <- function(input, output) {
       ggplot(aes(merged_likely_rec)) +
       geom_bar(fill = "#28ae80") +
       theme_classic() +
-      scale_x_continuous(breaks= c(1:10), labels=c(1:10), limits=c(1,10.5)) +
+      scale_x_continuous(breaks= c(1:10), labels=c(1:10), limits=c(0.5,10.5)) +
       coord_cartesian(clip="off") +
       geom_text(stat = "count", aes(label = after_stat(count)), vjust= 1.4,
                 colour = "lightgray", fontface = "bold") +
       theme(text = element_text(size = 17, family = "Arial")) +
       labs(y = "Count",
-           x = "Rating")
+           x = "Rating") +
+      ggtitle("How likely are you to recommend this workshop?") +
+      annotation_custom(textGrob("Most\nLikely", gp=gpar(fontsize=8, fontface = "bold")),xmin=10,xmax=10,ymin=-13,ymax=-13) +
+      annotation_custom(textGrob("Least\nLikely", gp=gpar(fontsize=8, fontface= "bold")),xmin=1,xmax=1,ymin=-13,ymax=-13)
+    
   })
   
-  #TODO: Should I add a note under the plot about percentage of responses that are 8 or above!? I think yes.
+  
       
-  # Plot: Positive impact likelihood ---------------------------------------------------
+  # Plot: Workshop Relevance (e.g., Positive impact likelihood) ---------------------------------------------------
   
-
-
-  # Plot: Workshop Relevance ----------------------------------------------------
   output$plot_workshop_relevance <- renderPlot({
-    itcr_slido_data() %>%
-      clean_names() %>%
-      filter(how_likely_are_you_to_use_what_you_learned_in_your_daily_work %in% c("Extremely likely",
-                                                                                  "Likely",
-                                                                                  "Not very likely",
-                                                                                  "Somewhat likely",
-                                                                                  "Very likely")) %>%
-      mutate(how_likely_are_you_to_use_what_you_learned_in_your_daily_work = factor(how_likely_are_you_to_use_what_you_learned_in_your_daily_work,
-                                                                                    levels = c("Not very likely",
-                                                                                               "Somewhat likely",
-                                                                                               "Likely",
-                                                                                               "Very likely",
-                                                                                               "Extremely likely"))) %>%
-      ggplot(aes(x = how_likely_are_you_to_use_what_you_learned_in_your_daily_work)) +
-      geom_bar(stat = "count", fill = "#28ae80") +
-      geom_text(stat = 'count', aes(label = ..count..), vjust = 1.4,
-                colour = "lightgray", fontface = "bold") +
+    itcr_slido_data_processed() %>%
+      filter(!str_detect(event_name, "Pre")) %>% #remove pre workshop survey that doesn't ask the relevant question
+      select(matches("relevant|positive_impact")) %>%
+      select(!matches("current_research_work")) %>%
+      mutate(merged_relevant_likely = as.integer(coacross(everything()))) %>%
+      ggplot(aes(merged_relevant_likely)) +
+      geom_bar(fill = "#28ae80") +
       theme_classic() +
+      scale_x_continuous(breaks= c(1:10), labels=c(1:10), limits=c(0.5,10.5)) +
+      coord_cartesian(clip="off") +
+      geom_text(stat = "count", aes(label = after_stat(count)), vjust= 1.4,
+                colour = "lightgray", fontface = "bold") +
       theme(text = element_text(size = 17, family = "Arial")) +
-      labs(x = NULL,
-           y = "Count")+
-      ggtitle("How likely are you to use\nwhat you learned in your daily work?")
+      labs(y = "Count",
+           x = "Rating") +
+      ggtitle("How likely is this workshop to have\na positive impact on your work?") +
+      annotation_custom(textGrob("Most\nLikely", gp=gpar(fontsize=8, fontface = "bold")),xmin=10,xmax=10,ymin=-5.5,ymax=-5.5) +
+      annotation_custom(textGrob("Least\nLikely", gp=gpar(fontsize=8, fontface= "bold")),xmin=1,xmax=1,ymin=-5.5,ymax=-5.5)
+      
+    
   })
-
+  
   # Plot: Workshop Career Stage ----------------------------------------------------
   output$plot_workshop_career_stage <- renderPlot({
     career_stage_processed() %>%
