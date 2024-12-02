@@ -39,6 +39,18 @@ coacross <- function(...) {
   coalesce(!!!across(...))
 }
 
+get_to_bind <- function(inputdf, prepost, workshopOI){
+  nrankOI <- nrow(inputdf %>%
+                    filter(pre_post == prepost & workshop == workshopOI) %>% drop_na())
+  
+  return(inputdf %>%
+           filter(pre_post == prepost & workshop == workshopOI) %>%
+           select(value) %>% `colnames<-`(c(paste(workshopOI,prepost, sep="-"))) %>%
+           colSums(na.rm = TRUE) %>%
+           as.data.frame() %>% `colnames<-`(c("totalRank")) %>%
+           mutate(avgRank = totalRank / nrankOI))
+}
+
 ui <- dashboardPage(
   # Dashboard Header ----------------------------------------------------
   dashboardHeader(
@@ -172,6 +184,17 @@ ui <- dashboardPage(
                     width = 12,
                     plotOutput("plot_monthly_cran_download"),
                     footer = "*Dashed vertical lines denote when software was published on CRAN.")
+              ),
+              # Third Row
+              fluidRow(
+                tabBox(side = "left",
+                     height = "300px",
+                     tabPanel("Package Download Totals",
+                              DTOutput("table_cran_downloads")),
+                     tabPanel("Package Download Totals - Last 6 months",
+                              DTOutput("table_cran_sixmonths")),
+                     width = 8
+                )
               )
       ),
       # Collaborations Tab ----------------------------------------------------
@@ -264,20 +287,20 @@ server <- function(input, output) {
                                    NULL,
                                    "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit?usp=sharing",
                                    googlesheets4::read_sheet,
-                                   sheet = "engagement overall")
+                                   sheet = "Course_data")
 
 
   course_processed <- reactive({
     course_raw() %>%
       pivot_longer(cols = contains("count"), names_to = "modality", values_to = "number_of_learners") %>%
-      mutate(course_name = factor(course_name)) %>%
+      mutate(course_name = factor(website)) %>%
       separate(modality, sep = "_", into = c("modality", "meh")) %>%
       mutate(modality = factor(modality, levels = c("website", "leanpub", "coursera"),
                                labels = c("website", "leanpub", "coursera"))) %>%
-      mutate(course_order = case_when(course_type == "Leadership" ~ 1,
-                                      course_type == "New to data" ~ 2,
-                                      course_type == "Software developers" ~ 3)) %>%
-      rename("Target Audience" =  course_type) %>%
+      mutate(course_order = case_when(target_audience == "Leadership" ~ 1,
+                                      target_audience == "New to data" ~ 2,
+                                      target_audience == "Software developers" ~ 3)) %>%
+      rename("Target Audience" =  target_audience) %>%
       filter(modality == input$modality)
 
   })
@@ -326,8 +349,8 @@ server <- function(input, output) {
 
     #colSums(tmp) #colSum to get the values that were in the last row....
     
-    if(tolower(data %>% slice(n()) %>% select(1)) == "total"){
-      t(data %>% slice(n()) %>% select(-1))
+    if(tolower(career_stage_counts_raw() %>% slice(n()) %>% select(1)) == "total"){
+      t(career_stage_counts_raw() %>% slice(n()) %>% select(-1))
     }
     
   })
@@ -620,54 +643,7 @@ server <- function(input, output) {
       )
   })
 
-  # Plot: Pre- and post- workshop confidence (pooled) ----------------------------------------
-  output$plot_workshop_confidence_pooled <- renderPlot({
-    rbind(
-      itcr_slido_data_processed() %>%  
-        filter(!str_detect(event_name, "Q2-NIH_")) %>%
-        select(event_name, contains("confident")) %>%
-        pivot_longer(contains("confident"), values_to = "value", names_to = "question") %>%
-        mutate(pre_post = if_else(grepl("now", question), "post", "pre")) %>% 
-        filter(str_length(value) <= 2) %>% #filter out the ones that are phrases and not numbers
-        filter(!str_detect(event_name, "GLBIO")) %>% #max ratings of 5 so filter out
-        select(value, pre_post),
-      itcr_slido_data_processed() %>%
-        filter(event_name == "Q2-NIH_PreSurvey") %>%
-        select(contains("confident")) %>% 
-        pivot_longer(everything(), values_to = "value", names_to = "question") %>%
-        mutate(pre_post = "pre") %>%
-        select(value, pre_post),
-      itcr_slido_data_processed() %>%
-        filter(str_detect(event_name, "Q2-NIH_") & event_name != "Q2-NIH_PreSurvey") %>%
-        select(contains("confident")) %>%
-        pivot_longer(everything(), values_to = "value", names_to = "question") %>%
-        mutate(pre_post = "post") %>%
-        select(value, pre_post)
-    ) %>% 
-      drop_na() %>%
-      mutate(value = as.integer(value),
-             pre_post = factor(pre_post, levels = c("pre", "post"))
-            ) %>%
-      ggplot(aes(x = value, y=pre_post, fill=pre_post)) +
-      geom_boxplot(outliers = FALSE) +
-      geom_jitter(aes(fill=pre_post), height=0.1, width=0.35, alpha=0.4, size=1.5, shape=21, color="black", stroke=1.5) +
-      theme_bw() + theme(panel.background = element_blank()) +
-      theme(legend.position = "bottom") +
-      xlab("Confidence Rank") + scale_x_continuous(breaks = 1:10, labels = 1:10) +
-      ylab("") +
-      ggtitle("How confident do you feel about ...") +
-      scale_fill_discrete(name = "Pre or post workshop?") +
-      coord_cartesian(clip = 'off') +
-      annotation_custom(textGrob("Most\nConfident", gp=gpar(fontsize=8, fontface = "bold")),xmin=10,xmax=10,ymin=0.1,ymax=0.1) +
-      annotation_custom(textGrob("Least\nConfident", gp=gpar(fontsize=8, fontface= "bold")),xmin=1,xmax=1,ymin=0.1,ymax=0.1) +
-      theme(axis.text.y=element_blank(),
-            axis.ticks.y=element_blank())
-  })
   
-  # Plot: Pre- and post- workshop confidence (workshop specific) ----------------------------
-  output$plot_workshop_confidence <- renderPlot({
-    
-  })
   
   # Plot: Recommendation likelihood ------------------------------------------------------
   
@@ -716,6 +692,56 @@ server <- function(input, output) {
       annotation_custom(textGrob("Most\nLikely", gp=gpar(fontsize=8, fontface = "bold")),xmin=10,xmax=10,ymin=-5.5,ymax=-5.5) +
       annotation_custom(textGrob("Least\nLikely", gp=gpar(fontsize=8, fontface= "bold")),xmin=1,xmax=1,ymin=-5.5,ymax=-5.5)
       
+    
+  })
+  
+  # Plot: Pre- and post- workshop confidence (pooled) ----------------------------------------
+  output$plot_workshop_confidence_pooled <- renderPlot({
+    rbind(
+      itcr_slido_data_processed() %>%  
+        filter(!str_detect(event_name, "Q2-NIH_")) %>%
+        select(event_name, contains("confident")) %>%
+        pivot_longer(contains("confident"), values_to = "value", names_to = "question") %>%
+        mutate(pre_post = if_else(grepl("now", question), "post", "pre")) %>% 
+        filter(str_length(value) <= 2) %>% #filter out the ones that are phrases and not numbers
+        filter(!str_detect(event_name, "GLBIO")) %>% #max ratings of 5 so filter out
+        select(value, pre_post),
+      itcr_slido_data_processed() %>%
+        filter(event_name == "Q2-NIH_PreSurvey") %>%
+        select(contains("confident")) %>% 
+        pivot_longer(everything(), values_to = "value", names_to = "question") %>%
+        mutate(pre_post = "pre") %>%
+        select(value, pre_post),
+      itcr_slido_data_processed() %>%
+        filter(str_detect(event_name, "Q2-NIH_") & event_name != "Q2-NIH_PreSurvey") %>%
+        select(contains("confident")) %>%
+        pivot_longer(everything(), values_to = "value", names_to = "question") %>%
+        mutate(pre_post = "post") %>%
+        select(value, pre_post)
+    ) %>% 
+      drop_na() %>%
+      mutate(value = as.integer(value),
+             pre_post = factor(pre_post, levels = c("pre", "post"))
+      ) %>%
+      ggplot(aes(x = value, y=pre_post, fill=pre_post)) +
+      geom_boxplot(outliers = FALSE) +
+      geom_jitter(aes(fill=pre_post), height=0.1, width=0.35, alpha=0.4, size=1.5, shape=21, color="black", stroke=1.5) +
+      theme_bw() + theme(panel.background = element_blank()) +
+      theme(legend.position = "bottom") +
+      xlab("Confidence Rank") + scale_x_continuous(breaks = 1:10, labels = 1:10) +
+      ylab("") +
+      ggtitle("How confident do you feel about ...") +
+      scale_fill_discrete(name = "Pre or post workshop?") +
+      coord_cartesian(clip = 'off') +
+      annotation_custom(textGrob("Most\nConfident", gp=gpar(fontsize=8, fontface = "bold")),xmin=10,xmax=10,ymin=0.1,ymax=0.1) +
+      annotation_custom(textGrob("Least\nConfident", gp=gpar(fontsize=8, fontface= "bold")),xmin=1,xmax=1,ymin=0.1,ymax=0.1) +
+      theme(axis.text.y=element_blank(),
+            axis.ticks.y=element_blank(),
+            text = element_text(size = 17, family = "Arial"))
+  })
+  
+  # Plot: Pre- and post- workshop confidence (workshop specific) ----------------------------
+  output$plot_workshop_confidence <- renderPlot({
     
   })
   
@@ -773,6 +799,39 @@ server <- function(input, output) {
            color = "R Packages")
   })
 
+  # Table: Total CRAN downloads by package
+  output$table_cran_downloads <- renderDT({
+    DT::datatable(
+      cran_download() %>%
+      group_by(package) %>%
+      summarize(total_downloads = sum(monthly_downloads)),
+      colnames = c("Package", "Total Downloads"),
+      options = list(lengthChange = FALSE, # remove "Show X entries"
+                     searching = FALSE,
+                     scrollY = "150px"), # remove Search box
+      # For the table to grow/shrink
+      fillContainer = TRUE,
+      escape = FALSE
+    )
+  })
+  
+  # Table: Total CRAN downloads by package last 6 months
+  output$table_cran_sixmonths <- renderDT({
+    DT::datatable(
+      cran_download() %>%
+        filter(Month > format(as.Date(today() - months(6)), "%Y-%m")) %>% #within 6 months
+        group_by(package) %>%
+        summarize(total_downloads = sum(monthly_downloads)),
+      colnames = c("Package", "Total Downloads"),
+      options = list(lengthChange = FALSE, # remove "Show X entries"
+                     searching = FALSE,
+                     scrollY = "150px"), # remove Search box
+      # For the table to grow/shrink
+      fillContainer = TRUE,
+      escape = FALSE
+    )
+  })
+  
   # Plot: All Collaborations ----------------------------------------------------
   output$plot_collaboration_all <- renderPlot({
     collabs_processed() %>%
