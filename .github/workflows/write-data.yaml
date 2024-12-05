@@ -10,7 +10,7 @@ jobs:
     name: Refresh Data
     runs-on: ubuntu-latest
     container:
-      image: cansav09/metricminer:testKI
+      image: cansav09/metricminer:main
 
     steps:
       - name: Checkout
