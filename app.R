@@ -23,7 +23,7 @@ time_interval <- 604800000
 cbPalette <- c("#E69F02", "#56B4E9", "#009E73", "#008080")
 
 #Leadership, new to data, software developers
-cbLEPalette <-c("#56B4E9", "#009E73", "#008080")
+cbLEPalette <-c("#56B4E9", "#009E73", "#008080", "#440154")
 
 xlabel_view <- c(rep(c("black", "transparent", "transparent", "transparent"), 41), "black", "transparent") #166 rows
 #cc <- rev(c("#fde725", "#addc30", "#5ec962", "#28ae80", "#21918c", "#2c728e", "#3b528b", "#472d7b", "#440154"))
