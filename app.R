@@ -701,6 +701,7 @@ server <- function(input, output) {
       itcr_slido_data_processed() %>%  
         filter(!str_detect(event_name, "Q2-NIH_")) %>%
         select(event_name, contains("confident")) %>%
+        mutate(across(contains("confident"), as.character)) %>% #getting an error about combining characters and doubles, so making everything a character before changing to an integer later after dropping irrelevant characters
         pivot_longer(contains("confident"), values_to = "value", names_to = "question") %>%
         mutate(pre_post = if_else(grepl("now", question), "post", "pre")) %>% 
         filter(str_length(value) <= 2) %>% #filter out the ones that are phrases and not numbers
@@ -709,12 +710,14 @@ server <- function(input, output) {
       itcr_slido_data_processed() %>%
         filter(event_name == "Q2-NIH_PreSurvey") %>%
         select(contains("confident")) %>% 
+        mutate(across(contains("confident"), as.character)) %>% #getting an error about combining characters and doubles, so making everything a character before changing to an integer later after dropping irrelevant characters
         pivot_longer(everything(), values_to = "value", names_to = "question") %>%
         mutate(pre_post = "pre") %>%
         select(value, pre_post),
       itcr_slido_data_processed() %>%
         filter(str_detect(event_name, "Q2-NIH_") & event_name != "Q2-NIH_PreSurvey") %>%
         select(contains("confident")) %>%
+        mutate(across(contains("confident"), as.character)) %>% #getting an error about combining characters and doubles, so making everything a character before changing to an integer later after dropping irrelevant characters
         pivot_longer(everything(), values_to = "value", names_to = "question") %>%
         mutate(pre_post = "post") %>%
         select(value, pre_post)
