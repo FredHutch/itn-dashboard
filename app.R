@@ -4,6 +4,7 @@ library(shinydashboard)
 
 library(tidyverse)
 library(janitor)
+library(grid)
 
 library(udpipe)
 library(wordcloud)
@@ -31,6 +32,24 @@ viridis_cc <- c("#440154", "#2c728e", "#fde725", "#28ae80", "#addc30")
 
 # Wordcloud
 ud_model <- udpipe::udpipe_load_model("wordcloud-model.udpipe")
+
+# Functions
+
+coacross <- function(...) {
+  coalesce(!!!across(...))
+}
+
+get_to_bind <- function(inputdf, prepost, workshopOI){
+  nrankOI <- nrow(inputdf %>%
+                    filter(pre_post == prepost & workshop == workshopOI) %>% drop_na())
+  
+  return(inputdf %>%
+           filter(pre_post == prepost & workshop == workshopOI) %>%
+           select(value) %>% `colnames<-`(c(paste(workshopOI,prepost, sep="-"))) %>%
+           colSums(na.rm = TRUE) %>%
+           as.data.frame() %>% `colnames<-`(c("totalRank")) %>%
+           mutate(avgRank = totalRank / nrankOI))
+}
 
 ui <- dashboardPage(
   # Dashboard Header ----------------------------------------------------
@@ -120,19 +139,27 @@ ui <- dashboardPage(
       tabItem(tabName = "tab_workshops",
               # First Row
               fluidRow(
-                box(title = "Workshop Recommendation",
-                    plotOutput("plot_workshop_recommendation")),
+                box(title = "Workshop Recommendation Likelihood",
+                    plotOutput("plot_workshop_recommendation"),
+                    footer = textOutput("percent_rec")),
 
                 box(title = "Workshop Relevance",
                     plotOutput("plot_workshop_relevance"))
               ),
               # Second Row
               fluidRow(
+                box(title = "Change in confidence on workshop topic(s)",
+                    plotOutput("plot_workshop_confidence_pooled")),
+                box(title = "Change in confidence for specific workshops",
+                    plotOutput("plot_workshop_confidence"))
+              ),
+              # Third Row
+              fluidRow(
                 box(title = "Workshop Registrant Career Stage",
                     width = 12,
                     plotOutput("plot_workshop_career_stage"))
               ),
-              # Third Row
+              # Second Row
               fluidRow(
                 box(title = "Workshop Review: What Did You Like Most?",
                     plotOutput("plot_workshop_review")),
@@ -157,6 +184,17 @@ ui <- dashboardPage(
                     width = 12,
                     plotOutput("plot_monthly_cran_download"),
                     footer = "*Dashed vertical lines denote when software was published on CRAN.")
+              ),
+              # Third Row
+              fluidRow(
+                tabBox(side = "left",
+                     height = "300px",
+                     tabPanel("Package Download Totals",
+                              DTOutput("table_cran_downloads")),
+                     tabPanel("Package Download Totals - Last 6 months",
+                              DTOutput("table_cran_sixmonths")),
+                     width = 8
+                )
               )
       ),
       # Collaborations Tab ----------------------------------------------------
@@ -249,20 +287,20 @@ server <- function(input, output) {
                                    NULL,
                                    "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit?usp=sharing",
                                    googlesheets4::read_sheet,
-                                   sheet = "engagement overall")
+                                   sheet = "Course_data")
 
 
   course_processed <- reactive({
     course_raw() %>%
       pivot_longer(cols = contains("count"), names_to = "modality", values_to = "number_of_learners") %>%
-      mutate(course_name = factor(course_name)) %>%
+      mutate(course_name = factor(website)) %>%
       separate(modality, sep = "_", into = c("modality", "meh")) %>%
       mutate(modality = factor(modality, levels = c("website", "leanpub", "coursera"),
                                labels = c("website", "leanpub", "coursera"))) %>%
-      mutate(course_order = case_when(course_type == "Leadership" ~ 1,
-                                      course_type == "New to data" ~ 2,
-                                      course_type == "Software developers" ~ 3)) %>%
-      rename("Target Audience" =  course_type) %>%
+      mutate(course_order = case_when(target_audience == "Leadership" ~ 1,
+                                      target_audience == "New to data" ~ 2,
+                                      target_audience == "Software developers" ~ 3)) %>%
+      rename("Target Audience" =  target_audience) %>%
       filter(modality == input$modality)
 
   })
@@ -272,26 +310,55 @@ server <- function(input, output) {
                                         NULL,
                                         "https://raw.githubusercontent.com/FredHutch/itn-dashboard/main/data/itcr_slido_data.csv",
                                         readr::read_csv)
+  
+  itcr_slido_data_processed <- reactive({  
+    itcr_slido_data() %>% clean_names() %>% 
+    mutate(participant = coalesce(user_id, participant_id)) %>%
+    filter(!is.na(participant))
+  })
+  
+  itcr_slido_data_rec <- reactive({
+    itcr_slido_data_processed() %>% 
+      filter(!str_detect(event_name, "Pre")) %>% #remove pre workshop survey that doesn't ask the relevant question
+      select(matches("recommend_")) %>% 
+      mutate(merged_likely_rec = as.integer(coacross(everything())))
+  })
+  
+  
+  output$percent_rec <- renderText({ 
+    paste0(round(sum(itcr_slido_data_rec()$merged_likely_rec >= 8, na.rm = TRUE) / sum(!is.na(itcr_slido_data_rec()$merged_likely_rec)) * 100, digits=1),  
+           " % of responses rated their recommendation likelihood as an 8 or higher.")
+  })
+  
 
   # Data: Workshop Registrant Career Stage ----------------------------------------------------
   career_stage_counts_raw <- reactiveFileReader(time_interval,
                                                 NULL,
                                                 "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit?usp=sharing",
                                                 googlesheets4::read_sheet,
-                                                range = "Copy of Workshop attendee type")
+                                                sheet = "Workshop attendee type totals")
+  
+  # This data is manually curated and does NOT automatically update
+  #This googlesheet has the workshop name in the first column and has counts for a specific career stage in each column.
+  #The final row of the google sheet is the total (column sum)
 
   career_stage_counts_summed <- reactive({
-    tmp <- career_stage_counts_raw() %>%
-      select(-1) %>%
-      slice(1:(n() - 1))
+    #tmp <- career_stage_counts_raw() %>%
+      #select(-1) %>% #drop the first column
+      #slice(1:(n() - 1)) #drop the last row
 
-    colSums(tmp)
+    #colSums(tmp) #colSum to get the values that were in the last row....
+    
+    if(tolower(career_stage_counts_raw() %>% slice(n()) %>% select(1)) == "total"){
+      t(career_stage_counts_raw() %>% slice(n()) %>% select(-1))
+    }
+    
   })
 
   career_stage_processed <- reactive({
     career_stage_processed <- data.frame(
-      Stage = names(career_stage_counts_summed()),
-      count = as.numeric(career_stage_counts_summed()),
+      Stage = rownames(career_stage_counts_summed()),
+      count = as.numeric(career_stage_counts_summed()[,1]),
       stringsAsFactors = FALSE
     )
 
@@ -387,7 +454,8 @@ server <- function(input, output) {
       # Filter out ITN Website since it is not an "Educational Resource"
       filter(!(website %in% c("ITN Website", "widget", "DaSL Collection",
                               "proof", "metricminer.org", "OTTR website",
-                              "Developing_WDL_Workflows", "Using Leanpub Course"))) %>%
+                              "Developing_WDL_Workflows", "Using Leanpub Course",
+                              "ocdo.fredhutch.org"))) %>%
       ggplot(aes(x = reorder(website, -totalUsers), y = totalUsers, fill = target_audience)) +
       geom_bar(stat = "identity") +
       geom_text(aes(label = totalUsers), hjust = 1.05,
@@ -458,7 +526,7 @@ server <- function(input, output) {
   # Plot: Course Engagement by Target Audience ----------------------------------------------------
   output$plot_engagement_target <- renderPlot({
     itcr_course_data_long() %>%
-      filter(!(website %in% c("widget", "DaSL Collection", "Developing_WDL_Workflows", "proof", "Using Leanpub Course"))) %>%
+      filter(!(website %in% c("widget", "DaSL Collection", "Developing_WDL_Workflows", "proof", "Using Leanpub Course", "ocdo.fredhutch.org"))) %>%
       group_by(modality, target_audience) %>%
       summarize(total_learners = sum(learner_count, na.rm = TRUE)) %>%
       ggplot(aes(x = reorder(modality, -total_learners), y = total_learners, fill = target_audience)) +
@@ -482,7 +550,7 @@ server <- function(input, output) {
     itcr_course_data_long() %>%
       group_by(website, target_audience) %>%
       summarize(total_learners = sum(learner_count, na.rm = TRUE)) %>%
-      filter(!(website %in% c("widget", "DaSL Collection", "Developing_WDL_Workflows", "proof", "Using Leanpub Course"))) %>%
+      filter(!(website %in% c("widget", "DaSL Collection", "Developing_WDL_Workflows", "proof", "Using Leanpub Course", "ocdo.fredhutch.org"))) %>%
       ggplot(aes(x = reorder(website, -total_learners), y = total_learners, fill = target_audience)) +
       geom_bar(stat = "identity") +
       geom_text(aes(label = total_learners), hjust = 1.05, na.rm = TRUE,
@@ -576,51 +644,111 @@ server <- function(input, output) {
       )
   })
 
-  # Plot: Workshop Recommendation ----------------------------------------------------
+  
+  
+  # Plot: Recommendation likelihood ------------------------------------------------------
+  
   output$plot_workshop_recommendation <- renderPlot({
-    itcr_slido_data() %>%
-      clean_names() %>%
-      mutate(merged_likely_rec = if_else(is.na(how_likely_would_you_be_to_recommend_this_workshop),
-                                         how_likely_would_you_be_to_recommend_this_workshop_2,
-                                         how_likely_would_you_be_to_recommend_this_workshop),
-             merged_likely_rec = as.numeric(merged_likely_rec)) %>%
+    itcr_slido_data_processed() %>%
+      filter(!str_detect(event_name, "Pre")) %>% #remove pre workshop survey that doesn't ask the relevant question
+      select(matches("recommend_")) %>% 
+      mutate(merged_likely_rec = as.integer(coacross(everything()))) %>%
       ggplot(aes(merged_likely_rec)) +
       geom_bar(fill = "#28ae80") +
-      scale_x_discrete(breaks = c(1:10), labels= c(1:10), limits=factor(c(1:10))) +
-      geom_text(stat = 'count', aes(label = ..count..), vjust = 1.4,
-                colour = "lightgray", fontface = "bold") +
       theme_classic() +
+      scale_x_continuous(breaks= c(1:10), labels=c(1:10), limits=c(0.5,10.5)) +
+      coord_cartesian(clip="off") +
+      geom_text(stat = "count", aes(label = after_stat(count)), vjust= 1.4,
+                colour = "lightgray", fontface = "bold") +
       theme(text = element_text(size = 17, family = "Arial")) +
       labs(y = "Count",
-           x = "Rating")
+           x = "Rating") +
+      ggtitle("How likely are you to recommend this workshop?") +
+      annotation_custom(textGrob("Most\nLikely", gp=gpar(fontsize=8, fontface = "bold")),xmin=10,xmax=10,ymin=-13,ymax=-13) +
+      annotation_custom(textGrob("Least\nLikely", gp=gpar(fontsize=8, fontface= "bold")),xmin=1,xmax=1,ymin=-13,ymax=-13)
+    
   })
-
-  # Plot: Workshop Relevance ----------------------------------------------------
+  
+  
+      
+  # Plot: Workshop Relevance (e.g., Positive impact likelihood) ---------------------------------------------------
+  
   output$plot_workshop_relevance <- renderPlot({
-    itcr_slido_data() %>%
-      clean_names() %>%
-      filter(how_likely_are_you_to_use_what_you_learned_in_your_daily_work %in% c("Extremely likely",
-                                                                                  "Likely",
-                                                                                  "Not very likely",
-                                                                                  "Somewhat likely",
-                                                                                  "Very likely")) %>%
-      mutate(how_likely_are_you_to_use_what_you_learned_in_your_daily_work = factor(how_likely_are_you_to_use_what_you_learned_in_your_daily_work,
-                                                                                    levels = c("Not very likely",
-                                                                                               "Somewhat likely",
-                                                                                               "Likely",
-                                                                                               "Very likely",
-                                                                                               "Extremely likely"))) %>%
-      ggplot(aes(x = how_likely_are_you_to_use_what_you_learned_in_your_daily_work)) +
-      geom_bar(stat = "count", fill = "#28ae80") +
-      geom_text(stat = 'count', aes(label = ..count..), vjust = 1.4,
-                colour = "lightgray", fontface = "bold") +
+    itcr_slido_data_processed() %>%
+      filter(!str_detect(event_name, "Pre")) %>% #remove pre workshop survey that doesn't ask the relevant question
+      select(matches("relevant|positive_impact")) %>%
+      select(!matches("current_research_work")) %>%
+      mutate(merged_relevant_likely = as.integer(coacross(everything()))) %>%
+      ggplot(aes(merged_relevant_likely)) +
+      geom_bar(fill = "#28ae80") +
       theme_classic() +
+      scale_x_continuous(breaks= c(1:10), labels=c(1:10), limits=c(0.5,10.5)) +
+      coord_cartesian(clip="off") +
+      geom_text(stat = "count", aes(label = after_stat(count)), vjust= 1.4,
+                colour = "lightgray", fontface = "bold") +
       theme(text = element_text(size = 17, family = "Arial")) +
-      labs(x = NULL,
-           y = "Count")+
-      ggtitle("How likely are you to use\nwhat you learned in your daily work?")
+      labs(y = "Count",
+           x = "Rating") +
+      ggtitle("How likely is this workshop to have\na positive impact on your work?") +
+      annotation_custom(textGrob("Most\nLikely", gp=gpar(fontsize=8, fontface = "bold")),xmin=10,xmax=10,ymin=-5.5,ymax=-5.5) +
+      annotation_custom(textGrob("Least\nLikely", gp=gpar(fontsize=8, fontface= "bold")),xmin=1,xmax=1,ymin=-5.5,ymax=-5.5)
+      
+    
   })
-
+  
+  # Plot: Pre- and post- workshop confidence (pooled) ----------------------------------------
+  output$plot_workshop_confidence_pooled <- renderPlot({
+    rbind(
+      itcr_slido_data_processed() %>%  
+        filter(!str_detect(event_name, "Q2-NIH_")) %>%
+        select(event_name, contains("confident")) %>%
+        mutate(across(contains("confident"), as.character)) %>% #getting an error about combining characters and doubles, so making everything a character before changing to an integer later after dropping irrelevant characters
+        pivot_longer(contains("confident"), values_to = "value", names_to = "question") %>%
+        mutate(pre_post = if_else(grepl("now", question), "post", "pre")) %>% 
+        filter(str_length(value) <= 2) %>% #filter out the ones that are phrases and not numbers
+        filter(!str_detect(event_name, "GLBIO")) %>% #max ratings of 5 so filter out
+        select(value, pre_post),
+      itcr_slido_data_processed() %>%
+        filter(event_name == "Q2-NIH_PreSurvey") %>%
+        select(contains("confident")) %>% 
+        mutate(across(contains("confident"), as.character)) %>% #getting an error about combining characters and doubles, so making everything a character before changing to an integer later after dropping irrelevant characters
+        pivot_longer(everything(), values_to = "value", names_to = "question") %>%
+        mutate(pre_post = "pre") %>%
+        select(value, pre_post),
+      itcr_slido_data_processed() %>%
+        filter(str_detect(event_name, "Q2-NIH_") & event_name != "Q2-NIH_PreSurvey") %>%
+        select(contains("confident")) %>%
+        mutate(across(contains("confident"), as.character)) %>% #getting an error about combining characters and doubles, so making everything a character before changing to an integer later after dropping irrelevant characters
+        pivot_longer(everything(), values_to = "value", names_to = "question") %>%
+        mutate(pre_post = "post") %>%
+        select(value, pre_post)
+    ) %>% 
+      drop_na() %>%
+      mutate(value = as.integer(value),
+             pre_post = factor(pre_post, levels = c("pre", "post"))
+      ) %>%
+      ggplot(aes(x = value, y=pre_post, fill=pre_post)) +
+      geom_boxplot(outliers = FALSE) +
+      geom_jitter(aes(fill=pre_post), height=0.1, width=0.35, alpha=0.4, size=1.5, shape=21, color="black", stroke=1.5) +
+      theme_bw() + theme(panel.background = element_blank()) +
+      theme(legend.position = "bottom") +
+      xlab("Confidence Rank") + scale_x_continuous(breaks = 1:10, labels = 1:10) +
+      ylab("") +
+      ggtitle("How confident do you feel about ...") +
+      scale_fill_discrete(name = "Pre or post workshop?") +
+      coord_cartesian(clip = 'off') +
+      annotation_custom(textGrob("Most\nConfident", gp=gpar(fontsize=8, fontface = "bold")),xmin=10,xmax=10,ymin=0.1,ymax=0.1) +
+      annotation_custom(textGrob("Least\nConfident", gp=gpar(fontsize=8, fontface= "bold")),xmin=1,xmax=1,ymin=0.1,ymax=0.1) +
+      theme(axis.text.y=element_blank(),
+            axis.ticks.y=element_blank(),
+            text = element_text(size = 17, family = "Arial"))
+  })
+  
+  # Plot: Pre- and post- workshop confidence (workshop specific) ----------------------------
+  output$plot_workshop_confidence <- renderPlot({
+    
+  })
+  
   # Plot: Workshop Career Stage ----------------------------------------------------
   output$plot_workshop_career_stage <- renderPlot({
     career_stage_processed() %>%
@@ -675,6 +803,39 @@ server <- function(input, output) {
            color = "R Packages")
   })
 
+  # Table: Total CRAN downloads by package
+  output$table_cran_downloads <- renderDT({
+    DT::datatable(
+      cran_download() %>%
+      group_by(package) %>%
+      summarize(total_downloads = sum(monthly_downloads)),
+      colnames = c("Package", "Total Downloads"),
+      options = list(lengthChange = FALSE, # remove "Show X entries"
+                     searching = FALSE,
+                     scrollY = "150px"), # remove Search box
+      # For the table to grow/shrink
+      fillContainer = TRUE,
+      escape = FALSE
+    )
+  })
+  
+  # Table: Total CRAN downloads by package last 6 months
+  output$table_cran_sixmonths <- renderDT({
+    DT::datatable(
+      cran_download() %>%
+        filter(Month > format(as.Date(today() - months(6)), "%Y-%m")) %>% #within 6 months
+        group_by(package) %>%
+        summarize(total_downloads = sum(monthly_downloads)),
+      colnames = c("Package", "Total Downloads"),
+      options = list(lengthChange = FALSE, # remove "Show X entries"
+                     searching = FALSE,
+                     scrollY = "150px"), # remove Search box
+      # For the table to grow/shrink
+      fillContainer = TRUE,
+      escape = FALSE
+    )
+  })
+  
   # Plot: All Collaborations ----------------------------------------------------
   output$plot_collaboration_all <- renderPlot({
     collabs_processed() %>%
