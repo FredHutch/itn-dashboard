@@ -59,7 +59,7 @@ readr::write_csv(itcr_ga_metric_data, file.path(root_dir,"data", "itcr_ga_metric
 # TODO: Where did the website_count column come from?
 manual_course_info <- googlesheets4::read_sheet(
   "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit#gid=1550012125", sheet = "Course_data",
-  col_types = "ccDDDciii") %>%
+  col_types = "ccDDDciiicc") %>%
   mutate_if(is.numeric.Date, lubridate::ymd)
 
 # Join this all together
@@ -78,13 +78,13 @@ readr::write_csv(itcr_course_metrics, file.path(root_dir,"data", "itcr_course_me
 # itcr_slido_data.csv ----------------------------------------------------
 
 # ITCR Google Drive
-itcr_drive_id <- "https://drive.google.com/drive/folders/0AJb5Zemj0AAkUk9PVA"
-itcr_slido_data_raw <- get_slido_files(itcr_drive_id)
-itcr_slido_data <- itcr_slido_data_raw$`Polls-per-participant`
+#itcr_drive_id <- "https://drive.google.com/drive/folders/0AJb5Zemj0AAkUk9PVA"
+#itcr_slido_data_raw <- get_slido_files(itcr_drive_id)
+#itcr_slido_data <- itcr_slido_data_raw$`Polls-per-participant`
 
   
 # Save these to CSVs
-readr::write_csv(itcr_slido_data, file.path(root_dir,"data", "itcr_slido_data.csv"))
+#readr::write_csv(itcr_slido_data, file.path(root_dir,"data", "itcr_slido_data.csv"))
 
 
 # cran_download_stats.csv ----------------------------------------------------
