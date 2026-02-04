@@ -59,7 +59,7 @@ readr::write_csv(itcr_ga_metric_data, file.path(root_dir,"data", "itcr_ga_metric
 # TODO: Where did the website_count column come from?
 manual_course_info <- googlesheets4::read_sheet(
   "https://docs.google.com/spreadsheets/d/1-8vox2LzkVKzhmSFXCWjwt3jFtK-wHibRAq2fqbxEyo/edit#gid=1550012125", sheet = "Course_data",
-  col_types = "ccDDDciii") %>%
+  col_types = "ccDDDciiicc") %>%
   mutate_if(is.numeric.Date, lubridate::ymd)
 
 # Join this all together
