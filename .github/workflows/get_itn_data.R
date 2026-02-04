@@ -87,7 +87,7 @@ itcr_slido_data_raw <- get_slido_files(itcr_drive_id)
 
   
 # Save these to CSVs
-readr::write_csv(itcr_slido_data, file.path(root_dir,"data", "itcr_slido_data.csv"))
+#readr::write_csv(itcr_slido_data, file.path(root_dir,"data", "itcr_slido_data.csv"))
 
 
 # cran_download_stats.csv ----------------------------------------------------
